@@ -1,0 +1,398 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:wght@500;700&family=IBM+Plex+Mono:wght@500;700&display=swap');
+
+:root {
+  --bg: #1f160f;
+  --surface: #e7d5b2;
+  --surface-high: #eadcc0;
+  --surface-mid: #ddc8a0;
+  --border: #816038;
+  --border-hi: #9a7443;
+  --accent: #8a5b22;
+  --green: #4b7a43;
+  --blue: #567d8f;
+  --gold: #b8863b;
+  --pink: #9b5f60;
+  --red: #8f3e30;
+  --text: #3f2a14;
+  --muted: #6d522e;
+  --font: 'EB Garamond', 'Times New Roman', serif;
+  --display: 'Cinzel', 'Times New Roman', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  background-image:
+    linear-gradient(rgba(38, 26, 14, 0.6), rgba(38, 26, 14, 0.65)),
+    url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2200&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.app {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(28, 19, 11, 0.76), rgba(28, 19, 11, 0.84)),
+    url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=2200&q=80');
+  background-size: cover;
+  background-position: center;
+  color: var(--text);
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background:
+    linear-gradient(rgba(234, 220, 191, 0.93), rgba(223, 203, 166, 0.93)),
+    url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80');
+  border-bottom: 1px solid rgba(95, 67, 33, 0.5);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.logo {
+  font-family: var(--display);
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #5f4020;
+}
+.top-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.xp-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.xp-bar {
+  width: 84px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(108, 77, 39, 0.25);
+  overflow: hidden;
+  border: 1px solid rgba(108, 77, 39, 0.38);
+}
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #9d6f31, #d8b77a);
+}
+
+.content {
+  padding: 76px 12px 12px;
+  max-width: 100%;
+  margin: 0;
+  animation: fadeUp 0.35s ease both;
+}
+
+.map-screen.rpg-layout + .bottom-nav {
+  display: none;
+}
+
+.home-screen {
+  min-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  border-color: #7a5a2a;
+  background:
+    radial-gradient(
+      1100px 420px at 80% -10%,
+      rgba(255, 247, 230, 0.36),
+      transparent 60%
+    ),
+    linear-gradient(rgba(232, 216, 185, 0.95), rgba(214, 190, 149, 0.95)),
+    url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+}
+
+.home-hero {
+  text-align: center;
+  padding: 18px 10px 6px;
+}
+
+.hero-kicker {
+  color: #6a4a1f;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.home-hero h1 {
+  margin: 10px 0 8px;
+  font-family: var(--display);
+  font-size: clamp(2.1rem, 8vw, 4.2rem);
+  line-height: 1;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 0 rgba(247, 232, 203, 0.8);
+}
+
+.hero-sub {
+  max-width: 740px;
+  margin: 0 auto;
+  color: #5b3f1b;
+}
+
+.hero-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.home-panels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.home-card {
+  border: 1px solid rgba(102, 73, 37, 0.42);
+  border-radius: 12px;
+  padding: 12px;
+  background:
+    linear-gradient(
+      150deg,
+      rgba(243, 231, 205, 0.94),
+      rgba(215, 193, 155, 0.94)
+    ),
+    url('https://www.transparenttextures.com/patterns/old-map.png');
+  box-shadow: inset 0 0 0 1px rgba(96, 67, 33, 0.14);
+}
+
+.home-card strong {
+  display: block;
+  margin: 6px 0;
+  font-family: var(--display);
+}
+
+.quick-links .quick-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-screen {
+  border-color: #7a5a2a;
+  background:
+    linear-gradient(rgba(33, 23, 13, 0.72), rgba(33, 23, 13, 0.78)),
+    url('https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=2200&q=80');
+  background-size: cover;
+  background-position: center;
+}
+
+.map-screen.rpg-layout {
+  padding: 0;
+  display: flex;
+}
+
+.map-content-wrapper {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+/* ===== MEDIEVAL GLOBAL OVERRIDES ===== */
+.screen,
+.wizard-card,
+.assessment-card,
+.assessment-panel,
+.shop-card,
+.inv-item,
+.rules-box,
+.inline-shop,
+.grim-card,
+.star-box,
+.modal-card {
+  background:
+    linear-gradient(rgba(238, 224, 193, 0.96), rgba(221, 199, 160, 0.96)),
+    url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+  border-color: rgba(103, 75, 37, 0.5) !important;
+  color: #3f2a14;
+}
+
+.title,
+.map-title,
+.menu-header h3,
+.logo,
+.hero-kicker,
+.map-section-title {
+  font-family: var(--display) !important;
+  color: #5f4020 !important;
+  text-shadow: 0 1px 0 rgba(255, 245, 222, 0.65) !important;
+}
+
+.map-subtitle,
+.hero-sub,
+.card-sub,
+.segment-label,
+.xp-numbers,
+.resource-label,
+.next-label,
+.muted {
+  color: #6a4d28 !important;
+  font-family: var(--font);
+}
+
+.btn,
+.btn-back,
+.menu-btn,
+.tab,
+.opt,
+.item-btn,
+.piece,
+.piece-btn,
+.slot {
+  font-family: var(--font) !important;
+  background: linear-gradient(
+    160deg,
+    rgba(236, 223, 196, 0.88),
+    rgba(204, 170, 120, 0.78)
+  ) !important;
+  border-color: rgba(110, 80, 40, 0.52) !important;
+  color: #4a3118 !important;
+}
+
+.btn.primary,
+.btn-primary,
+.tab.active,
+.nav-btn.active {
+  background: linear-gradient(90deg, #765128, #b18243) !important;
+  border-color: #7a562a !important;
+  color: #f8e7c4 !important;
+  box-shadow: 0 6px 16px rgba(92, 63, 29, 0.25) !important;
+}
+
+.btn:hover:not(:disabled),
+.menu-btn:hover,
+.tab:hover,
+.opt:hover,
+.item-btn:hover,
+.piece:hover,
+.piece-btn:hover,
+.slot:hover {
+  background: linear-gradient(
+    160deg,
+    rgba(244, 233, 209, 0.92),
+    rgba(216, 182, 130, 0.82)
+  ) !important;
+  border-color: rgba(122, 90, 42, 0.62) !important;
+  color: #3f2912 !important;
+}
+
+.tag {
+  background: rgba(129, 96, 56, 0.12) !important;
+  color: #5a3c1a !important;
+  border-color: rgba(110, 80, 40, 0.55) !important;
+}
+
+.hp-square.on {
+  background: #8f3e30;
+}
+
+.hp-square.off {
+  background: #bba884;
+}
+
+.feedback.ok {
+  background: rgba(74, 122, 67, 0.2) !important;
+  border-color: #4a7a43 !important;
+  color: #2f4f2a !important;
+}
+
+.feedback.err {
+  background: rgba(143, 62, 48, 0.22) !important;
+  border-color: #8f3e30 !important;
+  color: #5f241c !important;
+}
+
+.feedback.hint {
+  background: rgba(138, 91, 34, 0.2) !important;
+  border-color: #8a5b22 !important;
+  color: #5f3f1a !important;
+}
+
+.num-input,
+input,
+textarea,
+select {
+  background: rgba(244, 232, 208, 0.84) !important;
+  color: #4a3118 !important;
+  border-color: rgba(112, 80, 40, 0.45) !important;
+}
+
+.num-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 2px rgba(122, 90, 42, 0.2) !important;
+  border-color: rgba(122, 90, 42, 0.6) !important;
+}
+
+.progress-fill,
+.xp-progress-fill,
+.xp-fill,
+.mini-meter-fill,
+.precision-fill {
+  background: linear-gradient(90deg, #7a562a, #c39556) !important;
+}
+
+/* Home screen elements still using legacy neon classes */
+.player-level-display {
+  background: rgba(230, 213, 180, 0.8) !important;
+  border: 1px solid rgba(112, 80, 40, 0.38) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 220, 0.3);
+}
+
+.level-badge {
+  background: radial-gradient(
+    circle at 32% 28%,
+    #cfa56a 0%,
+    #9b6c33 72%
+  ) !important;
+  box-shadow: 0 6px 16px rgba(96, 67, 33, 0.24) !important;
+  border: 2px solid rgba(247, 228, 193, 0.85) !important;
+}
+
+.level-badge .level-num,
+.level-badge p {
+  color: #f8ecd3 !important;
+}
+
+.xp-progress {
+  background: rgba(124, 91, 46, 0.2) !important;
+  border: 1px solid rgba(112, 80, 40, 0.42) !important;
+}
+
+.resource-value,
+.big-stat,
+.next-name {
+  color: #7c5326 !important;
+}
+
+.card-badge {
+  background: linear-gradient(135deg, #7c5528, #ba8b4c) !important;
+  color: #f6e7c7 !important;
+}
+
+.phase-dots .dot.done {
+  background: #8f6630 !important;
+  box-shadow: 0 0 6px rgba(143, 102, 48, 0.45) !important;
+}
