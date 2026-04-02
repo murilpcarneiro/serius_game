@@ -14,12 +14,8 @@ function usePhaseLife({ state, setState, phaseId, setFeedback, onOut }) {
   }
 
   const damage = () => {
-    let nextHp = state.hp
-    setState((s) => {
-      nextHp = Math.max(0, s.hp - 1)
-      return { ...s, hp: nextHp }
-    })
-
+    const nextHp = Math.max(0, state.hp - 1)
+    setState((s) => ({ ...s, hp: Math.max(0, s.hp - 1) }))
     if (nextHp <= 0) onOut?.(phaseId)
     return nextHp
   }

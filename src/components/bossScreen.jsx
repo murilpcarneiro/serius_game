@@ -3,6 +3,15 @@ import { G, SHOP_ITEMS } from '../gameData'
 import { addToGrimoire, calcStars } from '../gameUtils'
 import { Feedback, HP, ItemBar, LoreCard, Tag, Timer } from './ui'
 
+const shuffleItems = (items) => {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[next[i], next[j]] = [next[j], next[i]]
+  }
+  return next
+}
+
 function InlineBossShop({ state, setState, secondsLeft }) {
   const list = SHOP_ITEMS.filter((i) => i.id !== 'elixir_supreme')
 
@@ -74,6 +83,10 @@ export function BossScreen({
   const [connStage, setConnStage] = useState(0)
   const [connElim, setConnElim] = useState(null)
   const [connInput, setConnInput] = useState('')
+  const [forgeOrder, setForgeOrder] = useState([])
+  const [wizOrder, setWizOrder] = useState([])
+  const [connOrder, setConnOrder] = useState([])
+  const [isResolving, setIsResolving] = useState(false)
 
   const reviewBuffer = useRef([])
   const q = boss.questions[qIndex]
@@ -110,7 +123,15 @@ export function BossScreen({
     setConnStage(0)
     setConnElim(null)
     setConnInput('')
+    setIsResolving(false)
   }, [qIndex, boss.timePerQuestion])
+
+  useEffect(() => {
+    if (!q) return
+    if (q.kind === 'forge') setForgeOrder(shuffleItems(q.pieces))
+    if (q.kind === 'wizard') setWizOrder(shuffleItems(q.steps[0].options))
+    if (q.kind === 'connect') setConnOrder(shuffleItems(q.options))
+  }, [qIndex])
 
   const effectiveBossLock =
     boss.blockedItems.includes('ALL') && !supremeOverride ? 'ALL' : boss.id
@@ -252,7 +273,9 @@ export function BossScreen({
 
   const renderQuestion = () => {
     if (q.kind === 'forge') {
-      const pieces = q.pieces.filter((p) => !forgeSlots.includes(p))
+      const pieces = (forgeOrder.length ? forgeOrder : q.pieces).filter(
+        (p) => !forgeSlots.includes(p),
+      )
       return (
         <div>
           <LoreCard text={q.story} />
@@ -291,7 +314,10 @@ export function BossScreen({
           </div>
           <button
             className="btn primary"
+            disabled={isResolving}
             onClick={() => {
+              if (isResolving) return
+              setIsResolving(true)
               if (
                 forgeSlots[0] === q.answer[0] &&
                 forgeSlots[1] === q.answer[1]
@@ -302,6 +328,7 @@ export function BossScreen({
               } else {
                 damage(q.hint, q.display)
                 setForgeSlots(['', ''])
+                setTimeout(() => setIsResolving(false), 750)
               }
             }}
           >
@@ -313,7 +340,9 @@ export function BossScreen({
 
     if (q.kind === 'wizard') {
       const curr = q.steps[wizStep]
-      const opts = curr.options.filter((o) => o !== wizElim)
+      const opts = (wizOrder.length ? wizOrder : curr.options).filter(
+        (o) => o !== wizElim,
+      )
       return (
         <div>
           <LoreCard text={q.story} />
@@ -338,7 +367,10 @@ export function BossScreen({
                 <button
                   key={o}
                   className="opt"
+                  disabled={isResolving}
                   onClick={() => {
+                    if (isResolving) return
+                    setIsResolving(true)
                     if (o === curr.correct) {
                       setFeedback({ msg: 'Correto.', type: 'ok' })
                       if (wizStep + 1 >= q.steps.length) {
@@ -348,10 +380,12 @@ export function BossScreen({
                         setTimeout(() => {
                           setWizStep((v) => v + 1)
                           setWizElim(null)
+                          setIsResolving(false)
                         }, 500)
                       }
                     } else {
                       damage(curr.explain, q.display)
+                      setTimeout(() => setIsResolving(false), 750)
                     }
                   }}
                 >
@@ -365,7 +399,9 @@ export function BossScreen({
     }
 
     if (q.kind === 'connect') {
-      const opts = q.options.filter((o) => o !== connElim)
+      const opts = (connOrder.length ? connOrder : q.options).filter(
+        (o) => o !== connElim,
+      )
       return (
         <div>
           <LoreCard text={q.story} />
@@ -384,15 +420,21 @@ export function BossScreen({
                 <button
                   key={o}
                   className="opt"
+                  disabled={isResolving}
                   onClick={() => {
+                    if (isResolving) return
                     if (o === q.correct) {
+                      setIsResolving(true)
                       setConnStage(1)
                       setFeedback({
                         msg: 'Antiderivada correta.',
                         type: 'ok',
                       })
+                      setTimeout(() => setIsResolving(false), 500)
                     } else {
+                      setIsResolving(true)
                       damage(q.hint, q.integral)
+                      setTimeout(() => setIsResolving(false), 750)
                     }
                   }}
                 >
@@ -414,7 +456,10 @@ export function BossScreen({
               />
               <button
                 className="btn primary"
+                disabled={isResolving}
                 onClick={() => {
+                  if (isResolving) return
+                  setIsResolving(true)
                   const n = Number(connInput.replace(',', '.'))
                   if (Math.abs(n - q.realNum) <= 0.6) {
                     setFeedback({ msg: 'Correto.', type: 'ok' })
@@ -422,6 +467,7 @@ export function BossScreen({
                     setTimeout(nextQuestionOrWin, 700)
                   } else {
                     damage(q.hint, q.integral)
+                    setTimeout(() => setIsResolving(false), 750)
                   }
                 }}
               >

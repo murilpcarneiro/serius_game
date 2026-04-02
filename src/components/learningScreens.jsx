@@ -1,8 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CONNECT_Q, FORGE_Q, G, INITIAL_HP, MEASURE_Q } from '../gameData'
 import { addToGrimoire } from '../gameUtils'
 import { CrystalModal, Feedback, HP, ItemBar, LoreCard, Tag } from './ui'
 import { usePhaseLife } from './usePhaseLife'
+
+const shuffleItems = (items) => {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[next[i], next[j]] = [next[j], next[i]]
+  }
+  return next
+}
+
+function PhaseDefeatScreen({ onBackMap }) {
+  return (
+    <section className="screen boss-end lose">
+      <h2>DERROTA</h2>
+      <p className="muted">Suas vidas acabaram nesta fase.</p>
+      <button className="btn primary" onClick={onBackMap}>
+        VOLTAR AO MAPA
+      </button>
+    </section>
+  )
+}
 
 export function ForgeScreen({
   state,
@@ -18,6 +39,9 @@ export function ForgeScreen({
   const [shake, setShake] = useState(false)
   const [score, setScore] = useState(0)
   const [reviewEntry, setReviewEntry] = useState(null)
+  const [pieceOrder, setPieceOrder] = useState([])
+  const [isResolving, setIsResolving] = useState(false)
+  const [defeated, setDefeated] = useState(false)
 
   const q = FORGE_Q[idx]
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
@@ -27,19 +51,55 @@ export function ForgeScreen({
       phaseId: 'forge',
       setFeedback,
       onOut: () => {
-        setFeedback({
-          msg: 'Você perdeu todas as vidas. Reiniciando questão com dica ativa.',
-          type: 'err',
-        })
-        setState((s) => ({ ...s, hp: INITIAL_HP.forge }))
-        setSlots(['', ''])
+        setFeedback({ msg: 'Vidas esgotadas.', type: 'err' })
+        setIsResolving(false)
+        setDefeated(true)
       },
     },
   )
 
-  const remainingPieces = q.pieces.filter((p) => !slots.includes(p))
+  useEffect(() => {
+    if (!q) return
+    setPieceOrder(shuffleItems(q.pieces))
+    setSlots(['', ''])
+    setShake(false)
+    setIsResolving(false)
+  }, [idx, q?.display])
+
+  if (!q) {
+    return (
+      <section className="screen phase-screen">
+        <div className="phase-head">
+          {onExit && (
+            <button className="btn-back phase-exit-btn" onClick={onExit}>
+              ← Voltar ao Mapa
+            </button>
+          )}
+        </div>
+        <p className="phase-subtitle">Questão indisponível no momento.</p>
+      </section>
+    )
+  }
+
+  if (defeated) {
+    return (
+      <PhaseDefeatScreen
+        onBackMap={() => {
+          setState((s) => ({ ...s, hp: 3 }))
+          onExit?.()
+        }}
+      />
+    )
+  }
+
+  const remainingPieces = (pieceOrder.length ? pieceOrder : q.pieces).filter(
+    (p) => !slots.includes(p),
+  )
 
   const verify = () => {
+    if (isResolving) return
+    setIsResolving(true)
+
     const ok = slots[0] === q.answer[0] && slots[1] === q.answer[1]
     if (ok) {
       setFeedback({ msg: `✓ ${q.ok} · +${q.xp} XP`, type: 'ok' })
@@ -51,25 +111,23 @@ export function ForgeScreen({
           onComplete('forge', nextScore, FORGE_Q.length, state.hp)
         } else {
           setIdx((v) => v + 1)
-          setSlots(['', ''])
           setFeedback(null)
         }
+        setIsResolving(false)
       }, 1300)
       return
     }
 
     addToGrimoire(setState, 'FORGE', q.hint, q.display)
     if (!consumeShield()) {
-      const nextHp = damage()
-      if (nextHp <= 0) {
-        setTimeout(() => setState((s) => ({ ...s, hp: INITIAL_HP.forge })), 900)
-      }
+      damage()
     }
     setFeedback({ msg: `✗ Incorreto. ${q.hint}`, type: 'err' })
     setShake(true)
     setTimeout(() => {
       setShake(false)
       setSlots(['', ''])
+      setIsResolving(false)
     }, 900)
   }
 
@@ -82,10 +140,7 @@ export function ForgeScreen({
     if (itemId === 'shield_life' && !shieldActive) {
       consumeItem(itemId)
       setShieldActive(true)
-      setFeedback({
-        msg: 'Escudo ativado para o proximo erro.',
-        type: 'hint',
-      })
+      setFeedback({ msg: 'Escudo ativado para o proximo erro.', type: 'hint' })
     }
     if (itemId === 'crystal_review') {
       consumeItem(itemId)
@@ -100,7 +155,7 @@ export function ForgeScreen({
 
   const placePiece = (piece) => {
     const pos = slots.findIndex((s) => !s)
-    if (pos === -1) return
+    if (pos === -1 || isResolving) return
     const next = [...slots]
     next[pos] = piece
     setSlots(next)
@@ -152,6 +207,7 @@ export function ForgeScreen({
               <button
                 key={i}
                 className={`slot ${slot ? 'filled' : ''}`}
+                disabled={isResolving}
                 onClick={() =>
                   slot && setSlots((s) => s.map((v, j) => (j === i ? '' : v)))
                 }
@@ -170,6 +226,7 @@ export function ForgeScreen({
               <button
                 key={p}
                 className="piece-btn"
+                disabled={isResolving}
                 onClick={() => placePiece(p)}
                 title="Clique para adicionar à resposta"
               >
@@ -180,7 +237,11 @@ export function ForgeScreen({
         </div>
 
         <div className="action-bar">
-          <button className="btn primary large-btn" onClick={verify}>
+          <button
+            className="btn primary large-btn"
+            disabled={isResolving}
+            onClick={verify}
+          >
             VERIFICAR RESPOSTA
           </button>
           {shieldActive && <span className="shield-badge">Escudo Ativo</span>}
@@ -263,9 +324,21 @@ export function WizardScreen({
   const [eliminated, setEliminated] = useState({})
   const [revealFirst, setRevealFirst] = useState(false)
   const [reviewEntry, setReviewEntry] = useState(null)
+  const [isResolving, setIsResolving] = useState(false)
+  const [optionOrder, setOptionOrder] = useState([])
+  const [defeated, setDefeated] = useState(false)
 
   const q = questions[qIdx]
-  const curr = q.steps[step]
+  const curr = q?.steps?.[step]
+
+  useEffect(() => {
+    if (!curr) {
+      setOptionOrder([])
+      return
+    }
+    setOptionOrder(shuffleItems(curr.options))
+    setIsResolving(false)
+  }, [qIdx, step, curr?.prompt])
 
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
     {
@@ -274,22 +347,48 @@ export function WizardScreen({
       phaseId,
       setFeedback,
       onOut: () => {
-        setFeedback({
-          msg: 'Vidas esgotadas. Reiniciando com dica ativa.',
-          type: 'err',
-        })
-        setStep(0)
-        setStepMark([])
-        setState((s) => ({ ...s, hp: INITIAL_HP[phaseId] }))
+        setFeedback({ msg: 'Vidas esgotadas.', type: 'err' })
+        setIsResolving(false)
+        setDefeated(true)
       },
     },
   )
 
-  const visibleOptions = curr.options.filter(
+  if (!q || !curr) {
+    return (
+      <section className="screen phase-screen">
+        <div className="phase-head">
+          <Tag color={color}>{phaseName}</Tag>
+          {onExit && (
+            <button className="btn-back phase-exit-btn" onClick={onExit}>
+              ← Voltar ao Mapa
+            </button>
+          )}
+        </div>
+        <p className="phase-subtitle">Questão indisponível no momento.</p>
+      </section>
+    )
+  }
+
+  if (defeated) {
+    return (
+      <PhaseDefeatScreen
+        onBackMap={() => {
+          setState((s) => ({ ...s, hp: 3 }))
+          onExit?.()
+        }}
+      />
+    )
+  }
+
+  const visibleOptions = optionOrder.filter(
     (o) => o !== eliminated[`${qIdx}-${step}`],
   )
 
   const answer = (opt) => {
+    if (isResolving) return
+    setIsResolving(true)
+
     if (opt === curr.correct) {
       const marks = [...stepMark]
       marks[step] = 'ok'
@@ -315,6 +414,7 @@ export function WizardScreen({
           }, 1300)
         } else {
           setStep((s) => s + 1)
+          setIsResolving(false)
         }
       }, 1000)
     } else {
@@ -323,15 +423,10 @@ export function WizardScreen({
       setStepMark(marks)
       addToGrimoire(setState, phaseName, curr.explain, q.display)
       if (!consumeShield()) {
-        const nextHp = damage()
-        if (nextHp <= 0) {
-          setTimeout(
-            () => setState((s) => ({ ...s, hp: INITIAL_HP[phaseId] })),
-            900,
-          )
-        }
+        damage()
       }
       setFeedback({ msg: `✗ Incorreto. ${curr.explain}`, type: 'err' })
+      setTimeout(() => setIsResolving(false), 650)
     }
   }
 
@@ -413,7 +508,12 @@ export function WizardScreen({
         <h3>{curr.prompt}</h3>
         <div className="opts-grid">
           {visibleOptions.map((opt) => (
-            <button key={opt} className="opt" onClick={() => answer(opt)}>
+            <button
+              key={opt}
+              className="opt"
+              disabled={isResolving}
+              onClick={() => answer(opt)}
+            >
               {opt}
             </button>
           ))}
@@ -455,19 +555,13 @@ export function MeasureScreen({
   onExit,
 }) {
   const [idx, setIdx] = useState(0)
-  const [stage, setStage] = useState(1)
-  const [estimate, setEstimate] = useState(MEASURE_Q[0].real)
   const [input, setInput] = useState('')
   const [feedback, setFeedback] = useState(null)
   const [score, setScore] = useState(0)
   const [reviewEntry, setReviewEntry] = useState(null)
+  const [defeated, setDefeated] = useState(false)
 
   const q = MEASURE_Q[idx]
-  const maxSlider = Math.max(1, Math.round(q.real * 2.5))
-  const precision = Math.max(
-    0,
-    100 - (Math.abs(estimate - q.real) / q.real) * 100,
-  )
 
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
     {
@@ -476,32 +570,58 @@ export function MeasureScreen({
       phaseId: 'measure',
       setFeedback,
       onOut: () => {
-        setFeedback({
-          msg: 'Vidas esgotadas. Recomece esta questão.',
-          type: 'err',
-        })
-        setState((s) => ({ ...s, hp: INITIAL_HP.measure }))
-        setStage(1)
-        setInput('')
+        setFeedback({ msg: 'Vidas esgotadas.', type: 'err' })
+        setDefeated(true)
       },
     },
   )
 
   const pts = Array.from({ length: 28 }).map((_, i) => {
     const x = q.a + ((q.b - q.a) * i) / 27
-    const y = q.fn(x)
-    return { x, y }
+    const top = q.topFn(x)
+    const bottom = q.bottomFn(x)
+    return { x, top, bottom }
   })
-  const yMax = Math.max(...pts.map((p) => p.y), 1)
+  const yMax = Math.max(...pts.map((p) => p.top), 1)
+  const yMin = Math.min(...pts.map((p) => p.bottom), 0)
+  const ySpan = Math.max(1, yMax - yMin)
+  const toY = (v) => 180 - ((v - yMin) / ySpan) * 140
 
-  const path = pts
+  const topPath = pts
     .map(
       (p, i) =>
-        `${i === 0 ? 'M' : 'L'} ${40 + ((p.x - q.a) / (q.b - q.a)) * 280} ${180 - (p.y / yMax) * 140}`,
+        `${i === 0 ? 'M' : 'L'} ${40 + ((p.x - q.a) / (q.b - q.a)) * 280} ${toY(p.top)}`,
     )
     .join(' ')
 
-  const areaPath = `${path} L 320 180 L 40 180 Z`
+  const bottomPath = pts
+    .map(
+      (p, i) =>
+        `${i === 0 ? 'M' : 'L'} ${40 + ((p.x - q.a) / (q.b - q.a)) * 280} ${toY(p.bottom)}`,
+    )
+    .join(' ')
+
+  const areaPath = `${topPath} ${pts
+    .slice()
+    .reverse()
+    .map((p) => `L ${40 + ((p.x - q.a) / (q.b - q.a)) * 280} ${toY(p.bottom)}`)
+    .join(' ')} Z`
+
+  useEffect(() => {
+    if (!q) return
+    setInput('')
+  }, [idx])
+
+  if (defeated) {
+    return (
+      <PhaseDefeatScreen
+        onBackMap={() => {
+          setState((s) => ({ ...s, hp: 3 }))
+          onExit?.()
+        }}
+      />
+    )
+  }
 
   const verify = () => {
     const val = Number(input.replace(',', '.'))
@@ -517,7 +637,6 @@ export function MeasureScreen({
         } else {
           const ni = idx + 1
           setIdx(ni)
-          setEstimate(MEASURE_Q[ni].real)
           setInput('')
           setStage(1)
           setFeedback(null)
@@ -526,13 +645,7 @@ export function MeasureScreen({
     } else {
       addToGrimoire(setState, 'MEASURE', q.hint, `${q.label}, [${q.a}, ${q.b}]`)
       if (!consumeShield()) {
-        const nextHp = damage()
-        if (nextHp <= 0) {
-          setTimeout(
-            () => setState((s) => ({ ...s, hp: INITIAL_HP.measure })),
-            900,
-          )
-        }
+        damage()
       }
       setFeedback({ msg: `✗ Incorreto. ${q.hint}`, type: 'err' })
       setInput('')
@@ -576,55 +689,39 @@ export function MeasureScreen({
         )}
       </div>
       <p className="phase-subtitle">
-        Estime visualmente a area e depois confirme numericamente o resultado.
+        Calcule a area entre as curvas usando:
+        {' '}
+        A = ∫[f_cima(x) - f_baixo(x)]dx
+      </p>
+      <p className="phase-subtitle">
+        No intervalo [{q.a}, {q.b}]: {q.topLabel} e {q.bottomLabel}
       </p>
       <LoreCard text={q.story} />
 
       <div className="integral-display">
-        ∫{q.a}^{q.b} {q.label.replace('f(x) = ', '')} dx
+        A = ∫{q.a}^{q.b} ({q.topLabel.replace('f_cima(x) = ', '')}) dx − ∫{q.a}^{q.b} ({q.bottomLabel.replace('f_baixo(x) = ', '')}) dx
       </div>
 
       <svg viewBox="0 0 360 220" className="graph">
         <path d={areaPath} fill="#38bdf844" />
-        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="3" />
+        <path d={topPath} fill="none" stroke="#22c55e" strokeWidth="3" />
+        <path d={bottomPath} fill="none" stroke="#f97316" strokeWidth="3" />
       </svg>
 
-      {stage === 1 ? (
-        <div className="measure-stage">
-          <label>Estimativa visual: {estimate.toFixed(2)}</label>
-          <input
-            type="range"
-            min={0}
-            max={maxSlider}
-            step="0.1"
-            value={estimate}
-            onChange={(e) => setEstimate(Number(e.target.value))}
-          />
-          <div className="precision">
-            <div
-              className="precision-fill"
-              style={{ width: `${precision}%` }}
-            />
-          </div>
-          <button className="btn" onClick={() => setStage(2)}>
-            CONFIRMAR
-          </button>
-        </div>
-      ) : (
-        <div className="measure-stage">
-          <p>{q.antideriv}</p>
-          <input
-            className="num-input"
-            type="number"
-            placeholder="Digite F(b)-F(a)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button className="btn primary" onClick={verify}>
-            VERIFICAR
-          </button>
-        </div>
-      )}
+      <div className="measure-stage">
+        <p>{q.topAntideriv}</p>
+        <p>{q.bottomAntideriv}</p>
+        <input
+          className="num-input"
+          type="number"
+          placeholder="Digite a área final"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button className="btn primary" onClick={verify}>
+          VERIFICAR
+        </button>
+      </div>
 
       <Feedback feedback={feedback} />
 
@@ -653,6 +750,9 @@ export function ConnectScreen({
   const [eliminated, setEliminated] = useState(null)
   const [input, setInput] = useState('')
   const [reviewEntry, setReviewEntry] = useState(null)
+  const [isResolving, setIsResolving] = useState(false)
+  const [optionOrder, setOptionOrder] = useState([])
+  const [defeated, setDefeated] = useState(false)
 
   const q = CONNECT_Q[idx]
 
@@ -663,35 +763,65 @@ export function ConnectScreen({
       phaseId: 'connect',
       setFeedback,
       onOut: () => {
-        setFeedback({
-          msg: 'Vidas esgotadas. Reiniciando esta questão.',
-          type: 'err',
-        })
-        setState((s) => ({ ...s, hp: INITIAL_HP.connect }))
-        setStage(0)
-        setInput('')
-        setEliminated(null)
+        setFeedback({ msg: 'Vidas esgotadas.', type: 'err' })
+        setIsResolving(false)
+        setDefeated(true)
       },
     },
   )
 
-  const options = q.options.filter((o) => o !== eliminated)
+  useEffect(() => {
+    if (!q) return
+    setOptionOrder(shuffleItems(q.options))
+    setStage(0)
+    setEliminated(null)
+    setInput('')
+    setIsResolving(false)
+  }, [idx, q?.integral])
+
+  if (!q) {
+    return (
+      <section className="screen phase-screen">
+        <div className="phase-head">
+          <Tag color={G.accent}>CONEXÃO</Tag>
+          {onExit && (
+            <button className="btn-back phase-exit-btn" onClick={onExit}>
+              ← Voltar ao Mapa
+            </button>
+          )}
+        </div>
+        <p className="phase-subtitle">Questão indisponível no momento.</p>
+      </section>
+    )
+  }
+
+  if (defeated) {
+    return (
+      <PhaseDefeatScreen
+        onBackMap={() => {
+          setState((s) => ({ ...s, hp: 3 }))
+          onExit?.()
+        }}
+      />
+    )
+  }
+
+  const options = (optionOrder.length ? optionOrder : q.options).filter(
+    (o) => o !== eliminated,
+  )
 
   const onWrong = (hintText) => {
     addToGrimoire(setState, 'CONNECT', hintText, q.integral)
     if (!consumeShield()) {
-      const nextHp = damage()
-      if (nextHp <= 0) {
-        setTimeout(
-          () => setState((s) => ({ ...s, hp: INITIAL_HP.connect })),
-          900,
-        )
-      }
+      damage()
     }
     setFeedback({ msg: `✗ Incorreto. ${hintText}`, type: 'err' })
   }
 
   const submitNum = () => {
+    if (isResolving) return
+    setIsResolving(true)
+
     const v = Number(input.replace(',', '.'))
     const ok = Math.abs(v - q.realNum) <= 0.6
     if (ok) {
@@ -708,11 +838,13 @@ export function ConnectScreen({
           setInput('')
           setEliminated(null)
           setFeedback(null)
+          setIsResolving(false)
         }
       }, 1300)
     } else {
       onWrong(q.hint)
       setInput('')
+      setTimeout(() => setIsResolving(false), 650)
     }
   }
 
@@ -725,10 +857,7 @@ export function ConnectScreen({
     if (itemId === 'shield_life' && !shieldActive) {
       consumeItem(itemId)
       setShieldActive(true)
-      setFeedback({
-        msg: 'Escudo ativado para o proximo erro.',
-        type: 'hint',
-      })
+      setFeedback({ msg: 'Escudo ativado para o proximo erro.', type: 'hint' })
     }
     if (itemId === 'potion_eliminate' && stage === 0) {
       const wrong = q.options.filter((o) => o !== q.correct && o !== eliminated)
@@ -779,15 +908,21 @@ export function ConnectScreen({
             <button
               key={opt}
               className="opt"
+              disabled={isResolving}
               onClick={() => {
+                if (isResolving) return
                 if (opt === q.correct) {
+                  setIsResolving(true)
                   setFeedback({ msg: '✓ Antiderivada correta.', type: 'ok' })
                   setTimeout(() => {
                     setFeedback(null)
                     setStage(1)
+                    setIsResolving(false)
                   }, 600)
                 } else {
+                  setIsResolving(true)
                   onWrong(q.hint)
+                  setTimeout(() => setIsResolving(false), 650)
                 }
               }}
             >
@@ -807,7 +942,11 @@ export function ConnectScreen({
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
-          <button className="btn primary" onClick={submitNum}>
+          <button
+            className="btn primary"
+            disabled={isResolving}
+            onClick={submitNum}
+          >
             VERIFICAR
           </button>
         </div>
