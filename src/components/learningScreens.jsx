@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CONNECT_Q, FORGE_Q, G, INITIAL_HP, MEASURE_Q } from '../gameData'
+import { CONNECT_Q, FORGE_Q, G, MEASURE_Q } from '../gameData'
 import { addToGrimoire } from '../gameUtils'
 import { CrystalModal, Feedback, HP, ItemBar, LoreCard, Tag } from './ui'
 import { usePhaseLife } from './usePhaseLife'
@@ -689,9 +689,7 @@ export function MeasureScreen({
         )}
       </div>
       <p className="phase-subtitle">
-        Calcule a area entre as curvas usando:
-        {' '}
-        A = ∫[f_cima(x) - f_baixo(x)]dx
+        Calcule a area entre as curvas usando: A = ∫[f_cima(x) - f_baixo(x)]dx
       </p>
       <p className="phase-subtitle">
         No intervalo [{q.a}, {q.b}]: {q.topLabel} e {q.bottomLabel}
@@ -699,7 +697,8 @@ export function MeasureScreen({
       <LoreCard text={q.story} />
 
       <div className="integral-display">
-        A = ∫{q.a}^{q.b} ({q.topLabel.replace('f_cima(x) = ', '')}) dx − ∫{q.a}^{q.b} ({q.bottomLabel.replace('f_baixo(x) = ', '')}) dx
+        A = ∫{q.a}^{q.b} ({q.topLabel.replace('f_cima(x) = ', '')}) dx − ∫{q.a}^
+        {q.b} ({q.bottomLabel.replace('f_baixo(x) = ', '')}) dx
       </div>
 
       <svg viewBox="0 0 360 220" className="graph">
