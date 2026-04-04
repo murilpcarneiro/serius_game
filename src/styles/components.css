@@ -73,14 +73,14 @@
 
 .hint-content strong {
   display: block;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: #f1f5f9;
   margin-bottom: 4px;
 }
 
 .hint-content small {
   color: #8892b2;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   display: block;
 }
 
@@ -118,7 +118,7 @@
 
 .assessment-card h3 {
   margin: 0 0 6px;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .assessment-card strong {
@@ -257,7 +257,7 @@
   padding: 4px 8px;
   border: 1px solid;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 .hp-row {
@@ -326,19 +326,19 @@
   border-radius: 7px;
   background: rgba(95, 67, 33, 0.12) !important;
   color: #5a3a18;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .map-screen .hints-section .hint-content strong {
   color: #5b3c1a !important;
-  font-size: 0.92rem;
+  font-size: 1.02rem;
   margin-bottom: 2px;
   line-height: 1.2;
 }
 
 .map-screen .hints-section .hint-content small {
   color: #6d4f2a !important;
-  font-size: 0.79rem;
+  font-size: 0.89rem;
   line-height: 1.25;
 }
 
@@ -429,22 +429,32 @@
 .pieces-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
   margin-bottom: 10px;
 }
-.piece {
-  padding: 8px 10px;
+
+.pieces-label {
+  font-size: 1.12rem;
+}
+
+.piece,
+.piece-btn {
+  padding: 10px 13px;
   border-radius: 8px;
   border: 1px solid var(--border-hi);
   background: var(--surface-high);
   color: var(--text);
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1.2;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease;
 }
 
-.piece:hover {
+.piece:hover,
+.piece-btn:hover {
   transform: translateY(-1px) scale(1.02);
   border-color: #8f8fd2;
 }
@@ -497,6 +507,7 @@
   text-align: left;
   line-height: 1.35;
   font-weight: 600;
+  font-size: 1.08rem;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease,
@@ -685,6 +696,7 @@
   margin: 0 0 8px;
   color: #5a3b1a;
   font-family: var(--display);
+  font-size: 1.16rem;
   letter-spacing: 0.5px;
 }
 
@@ -736,6 +748,240 @@
   background: rgba(245, 233, 207, 0.96);
   border-color: rgba(122, 90, 42, 0.62);
   transform: translateY(-1px);
+}
+
+/* ===== NPC BRIEFING ===== */
+.npc-briefing-screen {
+  min-height: 72vh;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(122, 90, 42, 0.55);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 229, 188, 0.28), transparent 46%),
+    radial-gradient(circle at 82% 82%, rgba(124, 90, 45, 0.28), transparent 50%);
+}
+
+.npc-briefing-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 222, 173, 0.3), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(122, 87, 42, 0.24), transparent 50%),
+    linear-gradient(rgba(43, 30, 18, 0.26), rgba(43, 30, 18, 0.42));
+  animation: npcBackdropPulse 6s ease-in-out infinite;
+}
+
+.npc-briefing-card {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 96%);
+  border-radius: 18px;
+  border: 1px solid rgba(122, 90, 42, 0.5);
+  background:
+    linear-gradient(rgba(246, 234, 211, 0.95), rgba(231, 208, 166, 0.95)),
+    url('https://www.transparenttextures.com/patterns/old-map.png');
+  box-shadow:
+    0 26px 45px rgba(22, 13, 7, 0.42),
+    inset 0 0 0 1px rgba(255, 249, 235, 0.32);
+  padding: 18px;
+  animation: npcCardRise 0.45s ease both;
+}
+
+.npc-briefing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.npc-briefing-phase {
+  margin: 0;
+  font-family: var(--display);
+  color: #5b3c1a;
+  letter-spacing: 0.8px;
+  text-align: right;
+}
+
+.npc-briefing-body {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.npc-avatar-wrap {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.npc-avatar-core {
+  width: 122px;
+  height: 122px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 32% 26%, #fff4da, #bb8a45 70%);
+  color: #4f3416;
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 700;
+  border: 2px solid rgba(122, 90, 42, 0.6);
+  box-shadow: 0 12px 24px rgba(80, 54, 27, 0.38);
+  animation: npcAvatarFloat 2.8s ease-in-out infinite;
+}
+
+.npc-avatar-core.boss {
+  background: radial-gradient(circle at 32% 26%, #ffe5d3, #cf6e42 70%);
+}
+
+.npc-avatar-ring {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2px dashed rgba(122, 90, 42, 0.5);
+  animation: npcRuneSpin 12s linear infinite;
+}
+
+.npc-dialogue {
+  border: 1px solid rgba(122, 90, 42, 0.35);
+  border-radius: 12px;
+  background: rgba(248, 239, 222, 0.76);
+  padding: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 235, 0.5);
+}
+
+.npc-name {
+  margin: 0;
+  font-family: var(--display);
+  color: #513616;
+  font-size: 1.25rem;
+}
+
+.npc-role {
+  margin: 2px 0 10px;
+  color: #7a572a;
+  font-weight: 700;
+}
+
+.npc-ambience {
+  margin: 0 0 10px;
+  color: #5a3b1a;
+  line-height: 1.4;
+}
+
+.npc-tip-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.npc-tip-item {
+  color: #4b3216;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.npc-tip-item.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.npc-briefing-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@keyframes npcCardRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes npcAvatarFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes npcRuneSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes npcBackdropPulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .npc-briefing-card {
+    padding: 14px;
+  }
+
+  .npc-briefing-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .npc-avatar-wrap {
+    width: 140px;
+    height: 140px;
+  }
+
+  .npc-avatar-core {
+    width: 100px;
+    height: 100px;
+    font-size: 1.5rem;
+  }
+
+  .npc-avatar-ring {
+    width: 126px;
+    height: 126px;
+  }
+
+  .npc-briefing-head,
+  .npc-briefing-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .npc-briefing-phase {
+    text-align: left;
+  }
 }
 
 .phase-screen .opts-grid {
@@ -842,12 +1088,12 @@
 
 .phase-screen .item-icon {
   font-family: var(--display);
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-right: 3px;
 }
 
 .phase-screen .item-label {
-  font-size: 0.86rem;
+  font-size: 0.96rem;
   font-weight: 700;
 }
 

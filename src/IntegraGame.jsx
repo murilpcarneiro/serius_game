@@ -7,6 +7,7 @@ import {
   HomeScreen,
   MapScreen,
   MeasureScreen,
+  PhaseBriefingScreen,
   ShopScreen,
   TutorialScreen,
   WizardScreen,
@@ -17,7 +18,9 @@ import {
   G,
   INITIAL_HP,
   INITIAL_STATE,
+  MAP_NODES,
   PARTS_Q,
+  PHASE_BRIEFINGS,
   SHOP_ITEMS,
   USUB_Q,
 } from './gameData'
@@ -30,8 +33,16 @@ export default function IntegraGame() {
   const [starResult, setStarResult] = useState(null)
   const [hasCrown, setHasCrown] = useState(false)
   const [previousScreen, setPreviousScreen] = useState('map')
+  const [pendingPhaseId, setPendingPhaseId] = useState(null)
 
   const bossIds = ['boss_forge', 'boss_usub_parts', 'boss_final']
+  const phaseIds = ['forge', 'usub', 'measure', 'connect', 'parts', ...bossIds]
+
+  const startPhaseBriefing = (phaseId) => {
+    setState((s) => ({ ...s, hp: INITIAL_HP[phaseId] }))
+    setPendingPhaseId(phaseId)
+    setScreen('phase_briefing')
+  }
 
   const openScreen = (id) => {
     const normalizedId = id === 'grimorio' ? 'grimoire' : id
@@ -39,21 +50,17 @@ export default function IntegraGame() {
     if (
       ['home', 'map', 'shop', 'grimoire', 'tutorial'].includes(normalizedId)
     ) {
+      setPendingPhaseId(null)
       setScreen(normalizedId)
       return
     }
 
-    if (
-      ['forge', 'usub', 'measure', 'connect', 'parts', ...bossIds].includes(
-        normalizedId,
-      )
-    ) {
+    if (phaseIds.includes(normalizedId)) {
       if (!isUnlocked(normalizedId, state.done, state.stars)) {
         setScreen('map')
         return
       }
-      setState((s) => ({ ...s, hp: INITIAL_HP[normalizedId] }))
-      setScreen(normalizedId)
+      startPhaseBriefing(normalizedId)
     }
   }
 
@@ -145,6 +152,22 @@ export default function IntegraGame() {
         )}
 
         {screen === 'map' && <MapScreen state={state} onOpen={openScreen} />}
+
+        {screen === 'phase_briefing' && pendingPhaseId && (
+          <PhaseBriefingScreen
+            phase={MAP_NODES.find((node) => node.id === pendingPhaseId)}
+            briefing={PHASE_BRIEFINGS[pendingPhaseId]}
+            onContinue={() => {
+              const targetPhase = pendingPhaseId
+              setPendingPhaseId(null)
+              setScreen(targetPhase)
+            }}
+            onCancel={() => {
+              setPendingPhaseId(null)
+              setScreen('map')
+            }}
+          />
+        )}
 
         {screen === 'forge' && (
           <ForgeScreen

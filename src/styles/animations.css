@@ -47,11 +47,11 @@
 @keyframes glow-pulse {
   0%,
   100% {
-    text-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
+    text-shadow: 0 0 12px rgba(196, 145, 78, 0.35);
     filter: brightness(1);
   }
   50% {
-    text-shadow: 0 0 24px rgba(192, 132, 252, 0.8);
+    text-shadow: 0 0 24px rgba(196, 145, 78, 0.7);
     filter: brightness(1.1);
   }
 }
@@ -60,13 +60,13 @@
   0%,
   100% {
     box-shadow:
-      0 0 12px rgba(192, 132, 252, 0.2),
-      inset 0 0 12px rgba(192, 132, 252, 0.1);
+      0 0 12px rgba(165, 119, 61, 0.2),
+      inset 0 0 12px rgba(165, 119, 61, 0.1);
   }
   50% {
     box-shadow:
-      0 0 24px rgba(192, 132, 252, 0.4),
-      inset 0 0 16px rgba(192, 132, 252, 0.15);
+      0 0 24px rgba(165, 119, 61, 0.36),
+      inset 0 0 16px rgba(165, 119, 61, 0.15);
   }
 }
 
@@ -93,13 +93,13 @@
   0%,
   100% {
     box-shadow:
-      0 0 8px rgba(192, 132, 252, 0.3),
-      inset 0 0 8px rgba(192, 132, 252, 0.1);
+      0 0 8px rgba(166, 121, 64, 0.34),
+      inset 0 0 8px rgba(166, 121, 64, 0.12);
   }
   50% {
     box-shadow:
-      0 0 16px rgba(192, 132, 252, 0.6),
-      inset 0 0 12px rgba(192, 132, 252, 0.2);
+      0 0 16px rgba(166, 121, 64, 0.56),
+      inset 0 0 12px rgba(166, 121, 64, 0.2);
   }
 }
 
@@ -175,7 +175,7 @@
 
 .level-badge p {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   letter-spacing: 1px;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -186,7 +186,7 @@
 
 .segment-label {
   margin: 0 0 8px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #7f5a2f;
 }
 
@@ -209,7 +209,7 @@
 
 .xp-numbers {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: #7f5a2f;
   text-align: right;
 }
@@ -547,7 +547,7 @@ select:focus {
   background: linear-gradient(135deg, #8d6231, #b88b51);
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
@@ -586,7 +586,7 @@ select:focus {
 
 .card-sub {
   color: #7f5a2f;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   margin: 2px 0 10px;
 }
 
@@ -654,7 +654,7 @@ select:focus {
 }
 
 .resource-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: #7f5a2f;
   margin: 0;
   letter-spacing: 0.5px;
@@ -667,7 +667,7 @@ select:focus {
 }
 
 .small-btn {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   padding: 8px 12px;
   transition: all 0.3s ease;
 }
@@ -686,7 +686,7 @@ select:focus {
 
 .next-label {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: #7f5a2f;
   letter-spacing: 0.5px;
 }
@@ -731,6 +731,17 @@ select:focus {
   box-shadow: 0 8px 20px rgba(96, 67, 33, 0.35);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Transitions suaves para todo o conteúdo */
 .content {
   animation: fadeUp 0.35s ease both;
@@ -766,6 +777,6 @@ select:focus {
     grid-template-columns: 1fr;
   }
   .logo {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
   }
 }

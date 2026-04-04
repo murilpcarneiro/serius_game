@@ -438,6 +438,11 @@ export function MapScreen({ state, onOpen }) {
                       floodOpacity="0.35"
                     />
                   </filter>
+                  <linearGradient id="river-ink" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="rgba(102, 155, 168, 0.85)" />
+                    <stop offset="50%" stopColor="rgba(118, 170, 182, 0.92)" />
+                    <stop offset="100%" stopColor="rgba(92, 144, 158, 0.78)" />
+                  </linearGradient>
                 </defs>
 
                 <rect
@@ -515,16 +520,26 @@ export function MapScreen({ state, onOpen }) {
                   strokeDasharray="7,7"
                 />
                 <path
-                  d="M 722 88 C 806 124, 842 161, 914 200"
+                  d="M 118 74 C 248 124, 372 174, 500 244 C 634 318, 762 389, 892 470 C 950 505, 1010 528, 1082 544"
                   fill="none"
-                  stroke="rgba(86, 125, 143, 0.65)"
-                  strokeWidth="2.1"
+                  stroke="rgba(68, 104, 118, 0.32)"
+                  strokeWidth="8.8"
+                  strokeLinecap="round"
                 />
                 <path
-                  d="M 914 200 C 988 233, 1032 288, 1110 323"
+                  d="M 118 74 C 248 124, 372 174, 500 244 C 634 318, 762 389, 892 470 C 950 505, 1010 528, 1082 544"
                   fill="none"
-                  stroke="rgba(86, 125, 143, 0.62)"
-                  strokeWidth="2.1"
+                  stroke="url(#river-ink)"
+                  strokeWidth="4.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 120 76 C 250 126, 376 179, 504 248 C 638 320, 768 391, 896 471 C 954 505, 1012 527, 1084 543"
+                  fill="none"
+                  stroke="rgba(220, 236, 241, 0.48)"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeDasharray="3,8"
                 />
                 <text
                   x="110"
@@ -536,8 +551,8 @@ export function MapScreen({ state, onOpen }) {
                   Bosque Antigo
                 </text>
                 <text
-                  x="742"
-                  y="83"
+                  x="138"
+                  y="68"
                   fill="rgba(74,49,24,0.84)"
                   fontSize="15"
                   fontStyle="italic"
@@ -580,13 +595,29 @@ export function MapScreen({ state, onOpen }) {
                   const unlocked = isUnlocked(n.id, state.done, state.stars)
                   const stars = state.stars[n.id] ?? 0
                   const isBoss = n.type === 'boss'
+                  const isObjective = nextObjective?.id === n.id
 
                   return (
                     <g
                       key={i}
                       transform={`translate(${n.x}, ${n.y})`}
-                      className={`map-node-group ${unlocked ? 'unlocked' : 'locked'} ${done ? 'done' : ''} ${isBoss ? 'boss' : ''}`}
+                      className={`map-node-group ${unlocked ? 'unlocked' : 'locked'} ${done ? 'done' : ''} ${isBoss ? 'boss' : ''} ${isObjective ? 'objective' : ''}`}
                     >
+                      {isObjective && unlocked && !done && (
+                        <>
+                          <circle className="objective-ring" r="51" />
+                          <circle className="objective-ring delayed" r="51" />
+                          <text
+                            y="-48"
+                            textAnchor="middle"
+                            className="objective-label"
+                            style={{ pointerEvents: 'none' }}
+                          >
+                            ALVO
+                          </text>
+                        </>
+                      )}
+
                       {/* Base shadow */}
                       <circle
                         r="40"

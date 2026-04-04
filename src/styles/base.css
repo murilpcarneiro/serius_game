@@ -15,6 +15,24 @@
   --red: #8f3e30;
   --text: #3f2a14;
   --muted: #6d522e;
+  --brand-primary: #765128;
+  --brand-primary-strong: #b18243;
+  --brand-hover-from: #f4e9d1;
+  --brand-hover-to: #d8b682;
+  --text-strong: #3f2912;
+  --text-soft: #5a3c1a;
+  --state-success: #4a7a43;
+  --state-success-bg: rgba(74, 122, 67, 0.2);
+  --state-success-text: #2f4f2a;
+  --state-danger: #8f3e30;
+  --state-danger-bg: rgba(143, 62, 48, 0.22);
+  --state-danger-text: #5f241c;
+  --state-hint: #8a5b22;
+  --state-hint-bg: rgba(138, 91, 34, 0.2);
+  --state-hint-text: #5f3f1a;
+  --focus-ring: rgba(122, 90, 42, 0.2);
+  --progress-from: #7a562a;
+  --progress-to: #c39556;
   --font: 'EB Garamond', 'Times New Roman', serif;
   --display: 'Cinzel', 'Times New Roman', serif;
 }
@@ -247,7 +265,7 @@ body {
 .resource-label,
 .next-label,
 .muted {
-  color: #6a4d28 !important;
+  color: var(--muted) !important;
   font-family: var(--font);
 }
 
@@ -267,14 +285,18 @@ body {
     rgba(204, 170, 120, 0.78)
   ) !important;
   border-color: rgba(110, 80, 40, 0.52) !important;
-  color: #4a3118 !important;
+  color: var(--text) !important;
 }
 
 .btn.primary,
 .btn-primary,
 .tab.active,
 .nav-btn.active {
-  background: linear-gradient(90deg, #765128, #b18243) !important;
+  background: linear-gradient(
+    90deg,
+    var(--brand-primary),
+    var(--brand-primary-strong)
+  ) !important;
   border-color: #7a562a !important;
   color: #f8e7c4 !important;
   box-shadow: 0 6px 16px rgba(92, 63, 29, 0.25) !important;
@@ -290,21 +312,21 @@ body {
 .slot:hover {
   background: linear-gradient(
     160deg,
-    rgba(244, 233, 209, 0.92),
-    rgba(216, 182, 130, 0.82)
+    var(--brand-hover-from),
+    var(--brand-hover-to)
   ) !important;
   border-color: rgba(122, 90, 42, 0.62) !important;
-  color: #3f2912 !important;
+  color: var(--text-strong) !important;
 }
 
 .tag {
   background: rgba(129, 96, 56, 0.12) !important;
-  color: #5a3c1a !important;
+  color: var(--text-soft) !important;
   border-color: rgba(110, 80, 40, 0.55) !important;
 }
 
 .hp-square.on {
-  background: #8f3e30;
+  background: var(--state-danger);
 }
 
 .hp-square.off {
@@ -312,21 +334,21 @@ body {
 }
 
 .feedback.ok {
-  background: rgba(74, 122, 67, 0.2) !important;
-  border-color: #4a7a43 !important;
-  color: #2f4f2a !important;
+  background: var(--state-success-bg) !important;
+  border-color: var(--state-success) !important;
+  color: var(--state-success-text) !important;
 }
 
 .feedback.err {
-  background: rgba(143, 62, 48, 0.22) !important;
-  border-color: #8f3e30 !important;
-  color: #5f241c !important;
+  background: var(--state-danger-bg) !important;
+  border-color: var(--state-danger) !important;
+  color: var(--state-danger-text) !important;
 }
 
 .feedback.hint {
-  background: rgba(138, 91, 34, 0.2) !important;
-  border-color: #8a5b22 !important;
-  color: #5f3f1a !important;
+  background: var(--state-hint-bg) !important;
+  border-color: var(--state-hint) !important;
+  color: var(--state-hint-text) !important;
 }
 
 .num-input,
@@ -342,7 +364,7 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 0 0 2px rgba(122, 90, 42, 0.2) !important;
+  box-shadow: 0 0 0 2px var(--focus-ring) !important;
   border-color: rgba(122, 90, 42, 0.6) !important;
 }
 
@@ -351,7 +373,11 @@ select:focus {
 .xp-fill,
 .mini-meter-fill,
 .precision-fill {
-  background: linear-gradient(90deg, #7a562a, #c39556) !important;
+  background: linear-gradient(
+    90deg,
+    var(--progress-from),
+    var(--progress-to)
+  ) !important;
 }
 
 /* Home screen elements still using legacy neon classes */

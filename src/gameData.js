@@ -608,6 +608,89 @@ export const MAP_NODES = [
   },
 ]
 
+export const PHASE_BRIEFINGS = {
+  forge: {
+    npcName: 'Mestre Rowan',
+    npcRole: 'Guardiao da Forja',
+    ambience: 'As arvores vibram com runas antigas ao seu redor.',
+    tips: [
+      'Priorize a regra da potencia antes de combinar as pecas.',
+      'Se travar, use pista e mantenha o escudo para erros criticos.',
+      'Leia a historia da fase: ela entrega o contexto do integrando.',
+    ],
+  },
+  usub: {
+    npcName: 'Arcanista Selene',
+    npcRole: 'Mentora da Mudanca',
+    ambience: 'A caverna ecoa simbolos que mudam de forma a cada passo.',
+    tips: [
+      'Busque primeiro o termo interno da funcao composta.',
+      'Confira se du aparece no integrando antes de prosseguir.',
+      'Resolva em u com calma e so depois volte para x.',
+    ],
+  },
+  measure: {
+    npcName: 'Cartografo Orion',
+    npcRole: 'Vigia das Planicies',
+    ambience: 'Marcos de pedra delimitam areas sob um ceu dourado.',
+    tips: [
+      'Visualize os limites para evitar erro de intervalo.',
+      'Cheque sinal e unidade da area no resultado final.',
+      'Use precisao antes de velocidade para ganhar estrelas.',
+    ],
+  },
+  parts: {
+    npcName: 'Dama Nyra',
+    npcRole: 'Bibliotecaria da Torre',
+    ambience: 'Pergaminhos giram no ar enquanto os degraus brilham.',
+    tips: [
+      'Escolha u por LIATE: o termo mais facil de derivar.',
+      'Monte uv menos integral de v du sem pular etapas.',
+      'Compare sua resposta com a forma fatorada quando possivel.',
+    ],
+  },
+  connect: {
+    npcName: 'Engenheiro Talos',
+    npcRole: 'Mestre dos Vinculos',
+    ambience: 'Pontes de energia conectam fragmentos do templo central.',
+    tips: [
+      'Revise a estrutura da expressao antes de escolher o metodo.',
+      'Em etapas longas, valide cada transformacao intermediaria.',
+      'Se surgir duvida, priorize coerencia algébrica na checagem.',
+    ],
+  },
+  boss_forge: {
+    npcName: 'Sentinela Kharon',
+    npcRole: 'Escudeiro do Bosque',
+    ambience: 'A arena treme enquanto o Guardiao desperta.',
+    tips: [
+      'Entre com foco: boss pune erros repetidos.',
+      'Itens defensivos valem mais que pressa nessa luta.',
+      'Respire entre perguntas e confirme cada operacao.',
+    ],
+  },
+  boss_usub_parts: {
+    npcName: 'Oraculo Veyra',
+    npcRole: 'Olho da Caverna',
+    ambience: 'Runas de U-SUB e PARTES se cruzam no chao da arena.',
+    tips: [
+      'Identifique rapido se a questao pede substituicao ou partes.',
+      'Nao force metodo unico: adapte tecnica ao enunciado.',
+      'Mantenha o ritmo e use recursos apenas quando necessario.',
+    ],
+  },
+  boss_final: {
+    npcName: 'Ancia Elowen',
+    npcRole: 'Cronista do Infinito',
+    ambience: 'O vazio cintila enquanto o Integral Supremo observa.',
+    tips: [
+      'Essa fase testa constancia: evite respostas impulsivas.',
+      'Revise rapidamente sinais, limites e substituicoes.',
+      'Se tiver itens raros, este e o momento ideal para usar.',
+    ],
+  },
+}
+
 export const MAP_EDGES = [
   ['forge', 'usub'],
   ['forge', 'measure'],

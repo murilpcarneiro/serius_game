@@ -218,6 +218,33 @@
   stroke-width: 4;
 }
 
+.map-node-group.objective .node-circle {
+  stroke: #f9e4bf;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 11px rgba(201, 147, 79, 0.72));
+}
+
+.objective-ring {
+  fill: none;
+  stroke: rgba(198, 145, 78, 0.72);
+  stroke-width: 2.4;
+  stroke-dasharray: 6 8;
+  animation: objectivePulse 1.7s ease-out infinite;
+}
+
+.objective-ring.delayed {
+  animation-delay: 0.65s;
+}
+
+.objective-label {
+  font-family: 'Cinzel', 'Times New Roman', serif;
+  font-size: 11px;
+  letter-spacing: 1.1px;
+  fill: #5f3f1b;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 244, 221, 0.95);
+}
+
 .node-circle {
   transition:
     filter 0.22s ease,
@@ -344,5 +371,16 @@
   50% {
     filter: drop-shadow(0 0 8px rgba(143, 62, 48, 0.55));
     stroke-width: 3.5;
+  }
+}
+
+@keyframes objectivePulse {
+  0% {
+    opacity: 0.86;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.23);
   }
 }
