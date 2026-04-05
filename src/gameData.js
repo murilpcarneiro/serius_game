@@ -37,6 +37,128 @@ export const INITIAL_STATE = {
   stars: {},
   grimoire: [],
   inventory: {},
+  playerClass: null,
+  talents: {},
+  spentTalentPoints: 0,
+  loadout: {
+    slot1: null,
+    slot2: null,
+  },
+  reputation: {},
+  claimedQuests: [],
+}
+
+export const RPG_CLASSES = [
+  {
+    id: 'alquimista',
+    name: 'Alquimista',
+    perk: 'Chance de preservar consumíveis ao usar itens.',
+    icon: '⚗',
+  },
+  {
+    id: 'guardiao',
+    name: 'Guardião',
+    perk: 'Inicia fases com escudo ativo.',
+    icon: '🛡',
+  },
+  {
+    id: 'arcanista',
+    name: 'Arcanista',
+    perk: 'Primeira dica de cada fase não consome item.',
+    icon: '✦',
+  },
+]
+
+export const TALENT_TREE = [
+  {
+    id: 'barganha',
+    name: 'Barganha Arcana',
+    description: 'Reduz preços da loja em 10% por ponto.',
+    maxRank: 3,
+  },
+  {
+    id: 'escudo_inicial',
+    name: 'Escudo Inicial',
+    description: 'Começa fases com escudo ativo.',
+    maxRank: 1,
+  },
+  {
+    id: 'mente_analitica',
+    name: 'Mente Analítica',
+    description: 'Primeira dica da fase é gratuita.',
+    maxRank: 1,
+  },
+]
+
+export const LOADOUT_RUNES = [
+  {
+    id: 'rune_ward',
+    name: 'Runa de Guarda',
+    effect: 'Ativa escudo no início da fase.',
+    icon: '🜁',
+  },
+  {
+    id: 'rune_focus',
+    name: 'Runa de Foco',
+    effect: 'Primeira dica da fase não consome item.',
+    icon: '🜂',
+  },
+  {
+    id: 'rune_trade',
+    name: 'Runa de Comércio',
+    effect: 'Concede desconto adicional de 15% na loja.',
+    icon: '🜃',
+  },
+]
+
+export const SIDE_QUESTS = [
+  {
+    id: 'q_guardiao_raizes',
+    title: 'Contrato: Quebra-Raízes',
+    description: 'Derrote o Guardião das Raízes.',
+    reward: { xp: 0, gold: 3, itemId: 'shield_life', itemQty: 1 },
+  },
+  {
+    id: 'q_coletor_estrelas',
+    title: 'Contrato: Coletor Estelar',
+    description: 'Acumule pelo menos 12 estrelas na campanha.',
+    reward: { xp: 100, gold: 2, itemId: null, itemQty: 0 },
+  },
+  {
+    id: 'q_grimorio',
+    title: 'Contrato: Cronista Arcano',
+    description:
+      'Documente 8 aprendizados no Grimório ou prove seu domínio ao concluir 6 fases da campanha.',
+    reward: { xp: 70, gold: 0, itemId: 'potion_hint', itemQty: 1 },
+  },
+  {
+    id: 'q_supremo',
+    title: 'Contrato: Era dos Integrais',
+    description: 'Derrote o boss final da campanha.',
+    reward: { xp: 120, gold: 5, itemId: 'elixir_supreme', itemQty: 1 },
+  },
+]
+
+export const NPC_REPUTATION = [
+  { id: 'rowan', name: 'Mestre Rowan' },
+  { id: 'selene', name: 'Arcanista Selene' },
+  { id: 'orion', name: 'Cartógrafo Orion' },
+  { id: 'nyra', name: 'Dama Nyra' },
+  { id: 'talos', name: 'Engenheiro Talos' },
+  { id: 'kharon', name: 'Sentinela Kharon' },
+  { id: 'veyra', name: 'Oráculo Veyra' },
+  { id: 'elowen', name: 'Anciã Elowen' },
+]
+
+export const PHASE_TO_NPC = {
+  forge: 'rowan',
+  usub: 'selene',
+  measure: 'orion',
+  parts: 'nyra',
+  connect: 'talos',
+  boss_forge: 'kharon',
+  boss_usub_parts: 'veyra',
+  boss_final: 'elowen',
 }
 
 export const SHOP_ITEMS = [
@@ -170,6 +292,28 @@ export const FORGE_Q = [
     ok: 'Comporta aberta! V(x) = 3x² + C',
     xp: 30,
   },
+  {
+    biome: 'Floresta da Potencia',
+    story:
+      'No trilho norte, os batedores detectam um pulso runico proporcional a 5x^4. Para manter a barreira estabilizada, encontre a antiderivada correta.',
+    display: '∫ 5x⁴ dx',
+    pieces: ['x⁵', '+C', '5x⁵', 'x⁴/5', '4x³'],
+    answer: ['x⁵', '+C'],
+    hint: '∫5x⁴ dx = 5·x⁵/5 + C = x⁵ + C.',
+    ok: 'Barreira estabilizada! F(x) = x⁵ + C',
+    xp: 30,
+  },
+  {
+    biome: 'Floresta da Potencia',
+    story:
+      'Perto do acampamento aliado, a energia de defesa cresce como 8x². Calcule a funcao acumulada para sincronizar os obeliscos do perímetro.',
+    display: '∫ 8x² dx',
+    pieces: ['8x³/3', '+C', '4x²', 'x³/8', '16x'],
+    answer: ['8x³/3', '+C'],
+    hint: 'Regra da potência: ∫8x² dx = 8·x³/3 + C.',
+    ok: 'Perímetro calibrado! F(x) = 8x³/3 + C',
+    xp: 30,
+  },
 ]
 
 export const USUB_Q = [
@@ -268,6 +412,52 @@ export const USUB_Q = [
         ],
         correct: 'sen(3x)/3 + C',
         explain: 'Substituindo u=3x de volta: sen(u)/3+C = sen(3x)/3 + C.',
+      },
+    ],
+  },
+  {
+    biome: 'Caverna da Mudanca',
+    story:
+      'Em uma camara de ecos, um selo de contenção depende de resolver ∫(2x+1)^5·2 dx. Use a substituicao para evitar sobrecarga nas runas.',
+    display: '∫ (2x+1)⁵·2 dx',
+    xp: 45,
+    hint: 'Escolha u = 2x+1 para aproveitar du = 2 dx.',
+    ok: 'Selo contido! ∫(2x+1)⁵·2dx = (2x+1)⁶/6 + C',
+    steps: [
+      {
+        prompt: 'Defina u. Qual é a substituição correta?',
+        options: ['u = 2x+1', 'u = (2x+1)^5', 'u = 2x', 'u = x+1'],
+        correct: 'u = 2x+1',
+        explain: 'u deve ser o termo interno da potência: 2x+1.',
+      },
+      {
+        prompt: 'Se u = 2x+1, então du = ?',
+        options: ['2 dx', 'dx', '(2x+1) dx', '2x dx'],
+        correct: '2 dx',
+        explain: 'Derivando: du/dx = 2, então du = 2 dx.',
+      },
+      {
+        prompt: 'Após substituir, a integral fica:',
+        options: ['∫ u^5 du', '∫ 2u^5 du', '∫ u^6 du', '∫ u^4 du'],
+        correct: '∫ u^5 du',
+        explain: 'Como 2 dx = du, sobra apenas u^5.',
+      },
+      {
+        prompt: 'Resolva ∫ u^5 du =',
+        options: ['u^6/6 + C', 'u^5/5 + C', '6u^5 + C', 'u^6 + C'],
+        correct: 'u^6/6 + C',
+        explain: 'Pela potência: u^(5+1)/(5+1) = u^6/6 + C.',
+      },
+      {
+        prompt: 'Resultado final em x:',
+        options: [
+          '(2x+1)^6/6 + C',
+          '(2x+1)^5/5 + C',
+          '(2x)^6/6 + C',
+          '(x+1)^6/6 + C',
+        ],
+        correct: '(2x+1)^6/6 + C',
+        explain: 'Substituindo u por 2x+1: (2x+1)^6/6 + C.',
       },
     ],
   },
@@ -374,6 +564,53 @@ export const PARTS_Q = [
       },
     ],
   },
+  {
+    biome: 'Torre das Partes',
+    story:
+      'Na galeria oeste, um mecanismo de defesa reage a ∫x·sen(x)dx. Resolva por partes para desativar as lâminas do corredor.',
+    display: '∫ x·sen(x) dx',
+    xp: 55,
+    hint: 'Use u = x e dv = sen(x) dx.',
+    ok: 'Mecanismo neutralizado! ∫x·sen(x)dx = -x·cos(x) + sen(x) + C',
+    steps: [
+      {
+        prompt: 'Escolha u seguindo LIATE:',
+        options: ['u = x', 'u = sen(x)', 'u = x·sen(x)', 'u = cos(x)'],
+        correct: 'u = x',
+        explain: 'A parte algébrica x vira u pela regra LIATE.',
+      },
+      {
+        prompt: 'Se dv = sen(x) dx, então v = ?',
+        options: ['-cos(x)', 'cos(x)', 'sen(x)', '-sen(x)'],
+        correct: '-cos(x)',
+        explain: '∫sen(x)dx = -cos(x), então v = -cos(x).',
+      },
+      {
+        prompt: 'Calcule uv:',
+        options: ['-x·cos(x)', 'x·cos(x)', '-cos(x)', 'x·sen(x)'],
+        correct: '-x·cos(x)',
+        explain: 'uv = x · (-cos(x)) = -x·cos(x).',
+      },
+      {
+        prompt: 'du = dx. Então ∫v du = ∫(-cos(x))dx =',
+        options: ['-sen(x) + C', 'sen(x) + C', 'cos(x) + C', '-cos(x) + C'],
+        correct: '-sen(x) + C',
+        explain: 'Integral de -cos(x) é -sen(x).',
+      },
+      {
+        prompt: 'Resultado final uv - ∫vdu =',
+        options: [
+          '-x·cos(x) + sen(x) + C',
+          '-x·cos(x) - sen(x) + C',
+          'x·cos(x) + sen(x) + C',
+          'x·sen(x) - cos(x) + C',
+        ],
+        correct: '-x·cos(x) + sen(x) + C',
+        explain:
+          'uv - ∫vdu = -x·cos(x) - (-sen(x)) = -x·cos(x) + sen(x) + C.',
+      },
+    ],
+  },
 ]
 
 export const MEASURE_Q = [
@@ -409,6 +646,23 @@ export const MEASURE_Q = [
     bottomAntideriv: 'F_baixo(x) = x²/2 + x',
     hint: 'Subtraia a area de baixo da area de cima no mesmo intervalo [a,b].',
     ok: 'Runas alinhadas! A faixa de proteção foi dimensionada.',
+    xp: 50,
+  },
+  {
+    biome: 'Planicie da Area',
+    story:
+      'Uma muralha curva foi erguida no caminho sul. Calcule a area entre f_cima(x)=2x+3 e f_baixo(x)=x no intervalo [1,4] para abrir passagem.',
+    topFn: (x) => 2 * x + 3,
+    bottomFn: (x) => x,
+    topLabel: 'f_cima(x) = 2x + 3',
+    bottomLabel: 'f_baixo(x) = x',
+    a: 1,
+    b: 4,
+    real: 16.5,
+    topAntideriv: 'F_cima(x) = x² + 3x',
+    bottomAntideriv: 'F_baixo(x) = x²/2',
+    hint: 'Use A = [F_cima(4)-F_cima(1)] - [F_baixo(4)-F_baixo(1)].',
+    ok: 'Passagem liberada! A area foi calculada com sucesso.',
     xp: 50,
   },
 ]
@@ -448,6 +702,23 @@ export const CONNECT_Q = [
     ok: 'Portal ativado! Energia total = 8 unidades.',
     xp: 60,
   },
+  {
+    biome: 'Templo do TFC',
+    story:
+      'No altar central, a corrente de mana segue f(x)=3x² no intervalo [0,2]. Aplique o TFC para estabilizar o núcleo do templo.',
+    integral: '∫₀² 3x² dx',
+    options: ['x³ + C', '3x³ + C', 'x² + C'],
+    correct: 'x³ + C',
+    a: 0,
+    b: 2,
+    Fb: '8',
+    Fa: '0',
+    realNum: 8,
+    realResult: '8',
+    hint: 'F(x)=x³. Então F(2)-F(0)=8-0.',
+    ok: 'Núcleo estabilizado! Energia total = 8.',
+    xp: 60,
+  },
 ]
 
 export const BOSS_CONFIG = {
@@ -456,7 +727,7 @@ export const BOSS_CONFIG = {
     name: 'Guardião das Raízes',
     biome: 'Guardiao das Raizes',
     story:
-      'Ao deixar a floresta, o Guardiao das Raizes desperta para impedir o avanco. O duelo testa tudo que foi aprendido em potencia; um erro e o selo da floresta se fecha novamente.',
+      'Ao deixar a floresta, o Guardiao das Raizes protege o Primeiro Selo da Coroa Arcana. Venca para quebrar a barreira inicial e provar que seu dominio de potencia sustenta a jornada.',
     hp: 1,
     timePerQuestion: 90,
     blockedItems: ['potion_eliminate'],
@@ -469,7 +740,7 @@ export const BOSS_CONFIG = {
     name: 'Arquimago da Caverna',
     biome: 'Arquimago da Caverna',
     story:
-      'No limiar entre Torre e Templo, o Arquimago da Caverna controla os rituais de substituicao e partes. Neste confronto, ele neutraliza atalhos e exige dominio tecnico completo.',
+      'No limiar entre Torre e Templo, o Arquimago da Caverna guarda o Segundo Selo da Coroa Arcana. Aqui nao ha atalhos: so avanca quem conecta substituicao e partes com precisao total.',
     hp: 1,
     timePerQuestion: 75,
     blockedItems: ['potion_hint', 'potion_eliminate'],
@@ -486,7 +757,7 @@ export const BOSS_CONFIG = {
     name: 'O Integral Supremo',
     biome: 'O Integral Supremo',
     story:
-      'No santuario final, O Integral Supremo condensa todas as tecnicas em um unico ritual. O tempo e curto, os itens sao restritos e cada decisao define o destino da campanha.',
+      'No Santuario do Limite, O Integral Supremo tenta corromper o Ultimo Selo da Coroa Arcana. Este duelo decide se a Ordem da Integral sera restaurada ou perdida para sempre.',
     hp: 1,
     timePerQuestion: 60,
     blockedItems: ['ALL'],
@@ -612,81 +883,81 @@ export const PHASE_BRIEFINGS = {
   forge: {
     npcName: 'Mestre Rowan',
     npcRole: 'Guardiao da Forja',
-    ambience: 'As arvores vibram com runas antigas ao seu redor.',
+    ambience: 'As arvores vibram com runas antigas: aqui comeca a busca pela Coroa Arcana.',
     tips: [
       'Priorize a regra da potencia antes de combinar as pecas.',
       'Se travar, use pista e mantenha o escudo para erros criticos.',
-      'Leia a historia da fase: ela entrega o contexto do integrando.',
+      'Cada acerto fortalece sua rota ate o Primeiro Selo.',
     ],
   },
   usub: {
     npcName: 'Arcanista Selene',
     npcRole: 'Mentora da Mudanca',
-    ambience: 'A caverna ecoa simbolos que mudam de forma a cada passo.',
+    ambience: 'A caverna ecoa simbolos mutaveis que testam seu controle de transformacoes.',
     tips: [
       'Busque primeiro o termo interno da funcao composta.',
       'Confira se du aparece no integrando antes de prosseguir.',
-      'Resolva em u com calma e so depois volte para x.',
+      'Resolva em u com calma: esse dominio sera cobrado nos selos finais.',
     ],
   },
   measure: {
     npcName: 'Cartografo Orion',
     npcRole: 'Vigia das Planicies',
-    ambience: 'Marcos de pedra delimitam areas sob um ceu dourado.',
+    ambience: 'Marcos de pedra delimitam areas sagradas que alimentam os selos da campanha.',
     tips: [
       'Visualize os limites para evitar erro de intervalo.',
       'Cheque sinal e unidade da area no resultado final.',
-      'Use precisao antes de velocidade para ganhar estrelas.',
+      'Precisao aqui garante recursos para sobreviver aos bosses.',
     ],
   },
   parts: {
     npcName: 'Dama Nyra',
     npcRole: 'Bibliotecaria da Torre',
-    ambience: 'Pergaminhos giram no ar enquanto os degraus brilham.',
+    ambience: 'Pergaminhos giram no ar enquanto a Torre revela formulas de ruptura dos selos.',
     tips: [
       'Escolha u por LIATE: o termo mais facil de derivar.',
       'Monte uv menos integral de v du sem pular etapas.',
-      'Compare sua resposta com a forma fatorada quando possivel.',
+      'Esse bioma prepara seu raciocinio para o Segundo Selo.',
     ],
   },
   connect: {
     npcName: 'Engenheiro Talos',
     npcRole: 'Mestre dos Vinculos',
-    ambience: 'Pontes de energia conectam fragmentos do templo central.',
+    ambience: 'Pontes de energia conectam fragmentos do templo que leva ao Santuario do Limite.',
     tips: [
       'Revise a estrutura da expressao antes de escolher o metodo.',
       'Em etapas longas, valide cada transformacao intermediaria.',
-      'Se surgir duvida, priorize coerencia algébrica na checagem.',
+      'No TFC, cada detalhe aproxima voce do confronto final.',
     ],
   },
   boss_forge: {
     npcName: 'Sentinela Kharon',
     npcRole: 'Escudeiro do Bosque',
-    ambience: 'A arena treme enquanto o Guardiao desperta.',
+    ambience: 'A arena treme enquanto o Guardiao desperta para proteger o Primeiro Selo.',
     tips: [
       'Entre com foco: boss pune erros repetidos.',
       'Itens defensivos valem mais que pressa nessa luta.',
-      'Respire entre perguntas e confirme cada operacao.',
+      'Vencer aqui libera o caminho para os biomas de ruptura.',
     ],
   },
   boss_usub_parts: {
     npcName: 'Oraculo Veyra',
     npcRole: 'Olho da Caverna',
-    ambience: 'Runas de U-SUB e PARTES se cruzam no chao da arena.',
+    ambience: 'Runas de U-SUB e PARTES se cruzam no chao: o Segundo Selo esta em jogo.',
     tips: [
       'Identifique rapido se a questao pede substituicao ou partes.',
       'Nao force metodo unico: adapte tecnica ao enunciado.',
-      'Mantenha o ritmo e use recursos apenas quando necessario.',
+      'Ao vencer, o Santuario Final sera finalmente desbloqueado.',
     ],
   },
   boss_final: {
     npcName: 'Ancia Elowen',
     npcRole: 'Cronista do Infinito',
-    ambience: 'O vazio cintila enquanto o Integral Supremo observa.',
+    ambience: 'O vazio cintila: o Ultimo Selo pulsa diante do Integral Supremo.',
     tips: [
       'Essa fase testa constancia: evite respostas impulsivas.',
       'Revise rapidamente sinais, limites e substituicoes.',
-      'Se tiver itens raros, este e o momento ideal para usar.',
+      'Este duelo encerra a campanha e decide o destino da Coroa Arcana.',
     ],
   },
 }

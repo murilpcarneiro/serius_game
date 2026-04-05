@@ -12,16 +12,37 @@ const shuffleItems = (items) => {
   return next
 }
 
-function InlineBossShop({ state, setState, secondsLeft }) {
+function bossErrorCategory(question) {
+  if (!question) return 'Conceito de integracao'
+  if (question.kind === 'forge') {
+    return 'Regra da potencia e constante de integracao'
+  }
+  if (question.kind === 'wizard' && question.family === 'U-SUB') {
+    return 'Substituicao (u e du)'
+  }
+  if (question.kind === 'wizard' && question.family === 'PARTES') {
+    return 'Integracao por partes (LIATE)'
+  }
+  if (question.kind === 'connect') {
+    return 'Teorema Fundamental do Calculo'
+  }
+  return 'Conceito de integracao'
+}
+
+function InlineBossShop({ state, setState, secondsLeft, rpgModifiers }) {
   const list = SHOP_ITEMS.filter((i) => i.id !== 'elixir_supreme')
 
   const buy = (item) => {
     const qty = state.inventory[item.id] ?? 0
     const money = item.currency === 'xp' ? state.xp : state.gold
-    if (money < item.cost || qty >= item.maxStack) return
+    const finalCost = Math.max(
+      1,
+      Math.floor(item.cost * (1 - (rpgModifiers?.shopDiscountPct ?? 0))),
+    )
+    if (money < finalCost || qty >= item.maxStack) return
     setState((s) => ({
       ...s,
-      [item.currency]: s[item.currency] - item.cost,
+      [item.currency]: s[item.currency] - finalCost,
       inventory: { ...s.inventory, [item.id]: qty + 1 },
     }))
   }
@@ -33,17 +54,22 @@ function InlineBossShop({ state, setState, secondsLeft }) {
         {list.map((item) => {
           const qty = state.inventory[item.id] ?? 0
           const money = item.currency === 'xp' ? state.xp : state.gold
+          const finalCost = Math.max(
+            1,
+            Math.floor(item.cost * (1 - (rpgModifiers?.shopDiscountPct ?? 0))),
+          )
           return (
             <article key={item.id} className="shop-card">
               <strong>
                 {item.icon} {item.name}
               </strong>
               <small className="muted">
-                {item.cost} {item.currency}
+                {finalCost} {item.currency}
+                {finalCost !== item.cost ? ` (base ${item.cost})` : ''}
               </small>
               <button
                 className="btn"
-                disabled={money < item.cost || qty >= item.maxStack}
+                disabled={money < finalCost || qty >= item.maxStack}
                 onClick={() => buy(item)}
               >
                 COMPRAR
@@ -63,6 +89,7 @@ export function BossScreen({
   onFinish,
   itemStatusBase,
   consumeItem,
+  rpgModifiers,
   onExit,
 }) {
   const [mode, setMode] = useState('brief')
@@ -72,9 +99,12 @@ export function BossScreen({
   const [timeLeft, setTimeLeft] = useState(boss.timePerQuestion)
   const [feedback, setFeedback] = useState(null)
   const [score, setScore] = useState(0)
-  const [shieldActive, setShieldActive] = useState(false)
+  const [shieldActive, setShieldActive] = useState(
+    rpgModifiers?.hasStartShield ?? false,
+  )
   const [extraLife, setExtraLife] = useState(false)
   const [supremeOverride, setSupremeOverride] = useState(false)
+  const [freeHintUsed, setFreeHintUsed] = useState(false)
 
   const [forgeSlots, setForgeSlots] = useState(['', ''])
   const [wizStep, setWizStep] = useState(0)
@@ -90,6 +120,15 @@ export function BossScreen({
 
   const reviewBuffer = useRef([])
   const q = boss.questions[qIndex]
+  const currentStage = Math.min(
+    3,
+    Math.floor((qIndex / Math.max(1, boss.questions.length)) * 3) + 1,
+  )
+  const stageLabel = {
+    1: 'Fase I · Reconhecimento',
+    2: 'Fase II · Pressão Arcana',
+    3: 'Fase III · Ruptura Final',
+  }[currentStage]
 
   useEffect(() => {
     if (!showShop) return undefined
@@ -115,7 +154,8 @@ export function BossScreen({
   }, [timeLeft, mode])
 
   useEffect(() => {
-    setTimeLeft(boss.timePerQuestion)
+    const stagePenalty = (currentStage - 1) * 10
+    setTimeLeft(Math.max(25, boss.timePerQuestion - stagePenalty))
     setForgeSlots(['', ''])
     setWizStep(0)
     setWizElim(null)
@@ -123,8 +163,9 @@ export function BossScreen({
     setConnStage(0)
     setConnElim(null)
     setConnInput('')
+    setFreeHintUsed(false)
     setIsResolving(false)
-  }, [qIndex, boss.timePerQuestion])
+  }, [qIndex, boss.timePerQuestion, currentStage])
 
   useEffect(() => {
     if (!q) return
@@ -163,11 +204,12 @@ export function BossScreen({
     setFeedback({ msg: `DERROTA: ${msg}`, type: 'err' })
   }
 
-  const damage = (hint, integralLabel) => {
-    addToGrimoire(setState, 'BOSS', hint, integralLabel)
+  const damage = (hint, integralLabel, category) => {
+    const concept = `${category}: ${hint}`
+    addToGrimoire(setState, 'BOSS', concept, integralLabel)
     reviewBuffer.current.push({
       fase: 'BOSS',
-      conceito: hint,
+      conceito: concept,
       integral: integralLabel,
       timestamp: Date.now(),
     })
@@ -191,7 +233,9 @@ export function BossScreen({
   }
 
   const useItem = (id) => {
-    if (!itemStatus(id).can) return
+    const freeHintAvailable =
+      id === 'potion_hint' && rpgModifiers?.hasFreeHint && !freeHintUsed
+    if (!itemStatus(id).can && !freeHintAvailable) return
 
     if (id === 'shield_life' && !shieldActive) {
       consumeItem(id)
@@ -212,7 +256,8 @@ export function BossScreen({
       })
     }
     if (id === 'potion_hint') {
-      consumeItem(id)
+      if (!freeHintAvailable) consumeItem(id)
+      if (freeHintAvailable) setFreeHintUsed(true)
       setFeedback({
         msg: `${q.hint || 'Observe a estrutura da integral e os termos internos.'}`,
         type: 'hint',
@@ -326,7 +371,7 @@ export function BossScreen({
                 setScore((s) => s + 1)
                 setTimeout(nextQuestionOrWin, 700)
               } else {
-                damage(q.hint, q.display)
+                damage(q.hint, q.display, bossErrorCategory(q))
                 setForgeSlots(['', ''])
                 setTimeout(() => setIsResolving(false), 750)
               }
@@ -384,7 +429,7 @@ export function BossScreen({
                         }, 500)
                       }
                     } else {
-                      damage(curr.explain, q.display)
+                      damage(curr.explain, q.display, bossErrorCategory(q))
                       setTimeout(() => setIsResolving(false), 750)
                     }
                   }}
@@ -433,7 +478,7 @@ export function BossScreen({
                       setTimeout(() => setIsResolving(false), 500)
                     } else {
                       setIsResolving(true)
-                      damage(q.hint, q.integral)
+                      damage(q.hint, q.integral, bossErrorCategory(q))
                       setTimeout(() => setIsResolving(false), 750)
                     }
                   }}
@@ -466,7 +511,7 @@ export function BossScreen({
                     setScore((s) => s + 1)
                     setTimeout(nextQuestionOrWin, 700)
                   } else {
-                    damage(q.hint, q.integral)
+                    damage(q.hint, q.integral, bossErrorCategory(q))
                     setTimeout(() => setIsResolving(false), 750)
                   }
                 }}
@@ -524,6 +569,7 @@ export function BossScreen({
             state={state}
             setState={setState}
             secondsLeft={shopSeconds}
+            rpgModifiers={rpgModifiers}
           />
         )}
       </section>
@@ -604,6 +650,7 @@ export function BossScreen({
         <p className="muted">
           Questão {qIndex + 1}/{boss.questions.length}
         </p>
+        <p className="muted">{stageLabel}</p>
       </div>
 
       {renderQuestion()}

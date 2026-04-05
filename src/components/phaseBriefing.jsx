@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { G } from '../gameData'
 import { Tag } from './ui'
 
@@ -16,34 +16,92 @@ const defaultBriefing = {
 export function PhaseBriefingScreen({
   phase,
   briefing,
+  playerState,
   onContinue,
   onCancel,
 }) {
   const data = briefing ?? defaultBriefing
   const isBoss = phase?.type === 'boss'
   const tips = Array.isArray(data.tips) ? data.tips.slice(0, 3) : []
-  const [visibleTips, setVisibleTips] = useState(0)
+  const donePhases = playerState?.done ?? []
+  const isFirstAttempt = phase?.id && !donePhases.includes(phase.id)
+  const showGuidedOnboarding =
+    isFirstAttempt && ['forge', 'usub'].includes(phase?.id)
+
+  const onboardingTips =
+    phase?.id === 'forge'
+      ? [
+          'Objetivo principal: montar a antiderivada correta e confirmar antes de clicar em verificar.',
+          'Nao gaste itens cedo: reserve escudo e dica para a ultima questao da fase.',
+          'Busque 3 estrelas: manter vida alta e acertar com consistencia acelera o progresso.',
+        ]
+      : [
+          'No U-SUB, identifique primeiro o termo interno para escolher u corretamente.',
+          'Cheque se du realmente aparece no integrando antes de substituir.',
+          'Se travar em um passo, use dica para destravar sem comprometer toda a fase.',
+        ]
+
+  const speechLines = useMemo(() => {
+    const lines = [data.ambience, ...tips.map((tip) => `• ${tip}`)]
+
+    if (showGuidedOnboarding) {
+      lines.push('Guia do Novato')
+      lines.push(...onboardingTips.map((tip) => `• ${tip}`))
+    }
+
+    return lines
+  }, [data.ambience, tips, showGuidedOnboarding, onboardingTips])
+
+  const fullSpeech = useMemo(() => speechLines.join('\n'), [speechLines])
+  const [typedChars, setTypedChars] = useState(0)
+  const [typingDone, setTypingDone] = useState(false)
+  const typingTimerRef = useRef(null)
+
+  const stopTypingTimer = () => {
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current)
+      typingTimerRef.current = null
+    }
+  }
 
   useEffect(() => {
-    setVisibleTips(0)
-    if (!tips.length) return undefined
+    stopTypingTimer()
+    setTypedChars(0)
+    setTypingDone(false)
 
-    const timers = tips.map((_, index) =>
-      setTimeout(() => {
-        setVisibleTips((current) => Math.max(current, index + 1))
-      }, 250 + index * 220),
-    )
-
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer))
+    if (!fullSpeech.length) {
+      setTypingDone(true)
+      return undefined
     }
-  }, [phase?.id])
+
+    typingTimerRef.current = setInterval(() => {
+      setTypedChars((prev) => {
+        const next = Math.min(fullSpeech.length, prev + 1)
+        if (next >= fullSpeech.length) {
+          stopTypingTimer()
+          setTypingDone(true)
+        }
+        return next
+      })
+    }, 17)
+
+    return () => stopTypingTimer()
+  }, [fullSpeech])
+
+  const handleSkipTyping = () => {
+    if (typingDone) return
+    stopTypingTimer()
+    setTypedChars(fullSpeech.length)
+    setTypingDone(true)
+  }
+
+  const typedSpeech = fullSpeech.slice(0, typedChars)
 
   return (
     <section className="screen npc-briefing-screen">
       <div className="npc-briefing-backdrop" aria-hidden="true" />
 
-      <article className="npc-briefing-card">
+      <article className="npc-briefing-card" onClick={handleSkipTyping}>
         <header className="npc-briefing-head">
           <Tag color={isBoss ? G.red : G.blue}>
             {isBoss ? 'Aviso de Boss' : 'Briefing de Campo'}
@@ -67,22 +125,28 @@ export function PhaseBriefingScreen({
           <div className="npc-dialogue">
             <p className="npc-name">{data.npcName}</p>
             <p className="npc-role">{data.npcRole}</p>
-            <p className="npc-ambience">{data.ambience}</p>
-
-            <ul className="npc-tip-list">
-              {tips.map((tip, index) => (
-                <li
-                  key={tip}
-                  className={`npc-tip-item ${visibleTips > index ? 'show' : ''}`}
-                >
-                  {tip}
-                </li>
-              ))}
-            </ul>
+            <pre className="npc-speech">
+              {typedSpeech}
+              {!typingDone && <span className="npc-cursor">▌</span>}
+            </pre>
+            {!typingDone && (
+              <p className="npc-skip-hint">Clique no card para mostrar tudo.</p>
+            )}
           </div>
         </div>
 
         <footer className="npc-briefing-actions">
+          {!typingDone && (
+            <button
+              className="btn"
+              onClick={(event) => {
+                event.stopPropagation()
+                handleSkipTyping()
+              }}
+            >
+              Pular Fala
+            </button>
+          )}
           <button className="btn" onClick={onCancel}>
             Voltar ao Mapa
           </button>

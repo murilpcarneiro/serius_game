@@ -1,11 +1,38 @@
 import { SHOP_ITEMS } from '../gameData'
 
-export function TopBar({ xp, gold, hp, hasCrown }) {
+export function TopBar({
+  xp,
+  gold,
+  hp,
+  hasCrown,
+  musicEnabled,
+  musicVolume,
+  onToggleMusic,
+  onMusicVolume,
+}) {
   const xpProgress = ((xp % 100) / 100) * 100
   return (
     <header className="topbar">
       <div className="logo">∫NTEGRA {hasCrown ? '[COROA]' : ''}</div>
       <div className="top-stats">
+        <div className="music-controls" title="Trilha ambiente original">
+          <button
+            className={`music-btn ${musicEnabled ? 'on' : ''}`}
+            onClick={onToggleMusic}
+            aria-label={musicEnabled ? 'Desligar música' : 'Ligar música'}
+          >
+            {musicEnabled ? '♪ ON' : '♪ OFF'}
+          </button>
+          <input
+            className="music-slider"
+            type="range"
+            min="0"
+            max="100"
+            value={Math.round((musicVolume ?? 0) * 100)}
+            onChange={(e) => onMusicVolume?.(Number(e.target.value) / 100)}
+            aria-label="Volume da música"
+          />
+        </div>
         <div className="xp-mini">
           <span>XP {xp}</span>
           <div className="xp-bar">

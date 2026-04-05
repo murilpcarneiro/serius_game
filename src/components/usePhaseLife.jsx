@@ -1,7 +1,14 @@
 import { useState } from 'react'
 
-function usePhaseLife({ state, setState, phaseId, setFeedback, onOut }) {
-  const [shieldActive, setShieldActive] = useState(false)
+function usePhaseLife({
+  state,
+  setState,
+  phaseId,
+  setFeedback,
+  onOut,
+  initialShield = false,
+}) {
+  const [shieldActive, setShieldActive] = useState(initialShield)
 
   const consumeShield = () => {
     if (shieldActive) {

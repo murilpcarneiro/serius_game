@@ -7,8 +7,9 @@ import imgEscudoVida from '../assets/shop-items/Escudo_de_Vida.webp'
 import imgPergaminhoMago from '../assets/shop-items/Pergaminho_do_mago.webp'
 import imgPocaoDica from '../assets/shop-items/Pocao_de_Dica.webp'
 import imgPocaoEliminar from '../assets/shop-items/Pocao_de_Eliminar.webp'
-import { G, SHOP_ITEMS } from '../gameData'
+import { G, LOADOUT_RUNES, SHOP_ITEMS } from '../gameData'
 import { phaseColor } from '../gameUtils'
+import { RpgSidebar } from './rpgSidebar'
 import { Tag } from './ui'
 
 const SHOP_ITEM_IMAGES = {
@@ -22,25 +23,38 @@ const SHOP_ITEM_IMAGES = {
   elixir_supreme: imgElixirSupremo,
 }
 
-export function ShopScreen({ state, setState, inPhase, onBack }) {
+export function ShopScreen({
+  state,
+  setState,
+  inPhase,
+  onNavigate,
+  rpgModifiers,
+  onSetLoadoutRune,
+}) {
   const [tab, setTab] = useState('shop')
   const [query, setQuery] = useState('')
   const [currencyFilter, setCurrencyFilter] = useState('all')
   const [onlyAffordable, setOnlyAffordable] = useState(false)
 
   const buy = (item) => {
+    if (item.availableOnlyIn?.length) return
     const qty = state.inventory[item.id] ?? 0
     const money = item.currency === 'xp' ? state.xp : state.gold
-    if (money < item.cost || qty >= item.maxStack) return
+    const finalCost = Math.max(
+      1,
+      Math.floor(item.cost * (1 - (rpgModifiers?.shopDiscountPct ?? 0))),
+    )
+    if (money < finalCost || qty >= item.maxStack) return
 
     setState((s) => ({
       ...s,
-      [item.currency]: s[item.currency] - item.cost,
+      [item.currency]: s[item.currency] - finalCost,
       inventory: { ...s.inventory, [item.id]: qty + 1 },
     }))
   }
 
   const filteredShopItems = SHOP_ITEMS.filter((item) => {
+    const availableInMainShop = !item.availableOnlyIn?.length
     const text =
       `${item.name} ${item.description} ${item.pedagogicNote}`.toLowerCase()
     const passesQuery = text.includes(query.toLowerCase())
@@ -48,347 +62,453 @@ export function ShopScreen({ state, setState, inPhase, onBack }) {
       currencyFilter === 'all' || item.currency === currencyFilter
     const qty = state.inventory[item.id] ?? 0
     const money = item.currency === 'xp' ? state.xp : state.gold
-    const affordable = money >= item.cost && qty < item.maxStack
+    const finalCost = Math.max(
+      1,
+      Math.floor(item.cost * (1 - (rpgModifiers?.shopDiscountPct ?? 0))),
+    )
+    const affordable = money >= finalCost && qty < item.maxStack
     const passesAfford = onlyAffordable ? affordable : true
-    return passesQuery && passesCurrency && passesAfford
+    return passesQuery && passesCurrency && passesAfford && availableInMainShop
   })
 
   return (
-    <section className="screen">
-      <div className="shop-top">
-        <div className="back-header">
-          {onBack && (
-            <button className="btn-back" onClick={onBack} title="Voltar">
-              ← Voltar
-            </button>
-          )}
-          <h2 className="title">Loja Arcana</h2>
-        </div>
-        <div className="top-stats">
-          <span>XP {state.xp}</span>
-          <span>OU {state.gold}</span>
-        </div>
-      </div>
-
-      <div className="tabs">
-        <button
-          className={`tab ${tab === 'shop' ? 'active' : ''}`}
-          onClick={() => setTab('shop')}
-        >
-          Loja
-        </button>
-        <button
-          className={`tab ${tab === 'inv' ? 'active' : ''}`}
-          onClick={() => setTab('inv')}
-        >
-          Inventário
-        </button>
-      </div>
-
-      {tab === 'shop' ? (
-        <>
-          <div className="shop-tools">
-            <input
-              className="num-input"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar item..."
-            />
-            <div className="tool-row">
-              <button
-                className={`tab ${currencyFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setCurrencyFilter('all')}
-              >
-                Todas
-              </button>
-              <button
-                className={`tab ${currencyFilter === 'xp' ? 'active' : ''}`}
-                onClick={() => setCurrencyFilter('xp')}
-              >
-                XP
-              </button>
-              <button
-                className={`tab ${currencyFilter === 'gold' ? 'active' : ''}`}
-                onClick={() => setCurrencyFilter('gold')}
-              >
-                Ouro
-              </button>
-              <button
-                className={`tab ${onlyAffordable ? 'active' : ''}`}
-                onClick={() => setOnlyAffordable((v) => !v)}
-              >
-                Compráveis
-              </button>
+    <section className="screen rpg-layout shop-screen">
+      <div className="map-content-wrapper">
+        <RpgSidebar state={state} active="shop" onNavigate={onNavigate} />
+        <div className="map-main support-main">
+          <div className="shop-top">
+            <div className="back-header">
+              <h2 className="title">Loja Arcana</h2>
+            </div>
+            <div className="top-stats">
+              <span>XP {state.xp}</span>
+              <span>OU {state.gold}</span>
             </div>
           </div>
 
-          <div className="shop-grid">
-            {filteredShopItems.map((item) => {
-              const qty = state.inventory[item.id] ?? 0
-              const money = item.currency === 'xp' ? state.xp : state.gold
-              const blocked = qty >= item.maxStack || money < item.cost
-              return (
-                <article key={item.id} className="shop-card">
-                  <div className="shop-item-image-wrap">
-                    <img
-                      src={SHOP_ITEM_IMAGES[item.id]}
-                      alt={item.name}
-                      className="shop-item-image"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        const fallback = e.currentTarget.nextElementSibling
-                        if (fallback) fallback.style.display = 'grid'
-                      }}
-                    />
-                    <div className="shop-item-image-fallback">{item.icon}</div>
-                  </div>
+          <div className="tabs">
+            <button
+              className={`tab ${tab === 'shop' ? 'active' : ''}`}
+              onClick={() => setTab('shop')}
+            >
+              Loja
+            </button>
+            <button
+              className={`tab ${tab === 'inv' ? 'active' : ''}`}
+              onClick={() => setTab('inv')}
+            >
+              Inventário
+            </button>
+          </div>
 
-                  <div className="shop-card-top">
-                    <div>
-                      <strong>{item.name}</strong>
-                      <div>
-                        <Tag color={item.currency === 'xp' ? G.gold : G.accent}>
-                          {item.currency.toUpperCase()}
-                        </Tag>
+          {tab === 'shop' ? (
+            <>
+              <div className="shop-tools">
+                <input
+                  className="num-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar item..."
+                />
+                <div className="tool-row">
+                  <button
+                    className={`tab ${currencyFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setCurrencyFilter('all')}
+                  >
+                    Todas
+                  </button>
+                  <button
+                    className={`tab ${currencyFilter === 'xp' ? 'active' : ''}`}
+                    onClick={() => setCurrencyFilter('xp')}
+                  >
+                    XP
+                  </button>
+                  <button
+                    className={`tab ${currencyFilter === 'gold' ? 'active' : ''}`}
+                    onClick={() => setCurrencyFilter('gold')}
+                  >
+                    Ouro
+                  </button>
+                  <button
+                    className={`tab ${onlyAffordable ? 'active' : ''}`}
+                    onClick={() => setOnlyAffordable((v) => !v)}
+                  >
+                    Compráveis
+                  </button>
+                </div>
+              </div>
+
+              <div className="shop-grid">
+                {filteredShopItems.map((item) => {
+                  const qty = state.inventory[item.id] ?? 0
+                  const money = item.currency === 'xp' ? state.xp : state.gold
+                  const finalCost = Math.max(
+                    1,
+                    Math.floor(
+                      item.cost * (1 - (rpgModifiers?.shopDiscountPct ?? 0)),
+                    ),
+                  )
+                  const blocked = qty >= item.maxStack || money < finalCost
+                  return (
+                    <article key={item.id} className="shop-card">
+                      <div className="shop-item-image-wrap">
+                        <img
+                          src={SHOP_ITEM_IMAGES[item.id]}
+                          alt={item.name}
+                          className="shop-item-image"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            const fallback = e.currentTarget.nextElementSibling
+                            if (fallback) fallback.style.display = 'grid'
+                          }}
+                        />
+                        <div className="shop-item-image-fallback">
+                          {item.icon}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <p className="muted">{item.description}</p>
-                  <small className="muted">{item.pedagogicNote}</small>
-                  <div className="shop-buy-row">
+
+                      <div className="shop-card-top">
+                        <div>
+                          <strong>{item.name}</strong>
+                          <div>
+                            <Tag
+                              color={item.currency === 'xp' ? G.gold : G.accent}
+                            >
+                              {item.currency.toUpperCase()}
+                            </Tag>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="muted">{item.description}</p>
+                      <small className="muted">{item.pedagogicNote}</small>
+                      <div className="shop-buy-row">
+                        <span>
+                          {finalCost} {item.currency === 'xp' ? 'XP' : 'OU'}
+                          {finalCost !== item.cost
+                            ? ` (base ${item.cost})`
+                            : ''}
+                        </span>
+                        <button
+                          className="btn"
+                          disabled={blocked}
+                          onClick={() => buy(item)}
+                        >
+                          COMPRAR
+                        </button>
+                      </div>
+                      <small className="muted">
+                        Qtd: {qty}/{item.maxStack}
+                      </small>
+                    </article>
+                  )
+                })}
+              </div>
+              {!filteredShopItems.length && (
+                <p className="muted">
+                  Nenhum item encontrado com esses filtros.
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="inv-list">
+              <div className="assessment-panel">
+                <h3>Loadout de Runas</h3>
+                <p className="muted">
+                  Equipe 2 runas para alterar seu estilo de jogo nas fases.
+                </p>
+                <div className="shop-grid compact">
+                  {LOADOUT_RUNES.map((rune) => {
+                    const equippedInSlot1 = state.loadout?.slot1 === rune.id
+                    const equippedInSlot2 = state.loadout?.slot2 === rune.id
+                    return (
+                      <article key={rune.id} className="shop-card">
+                        <strong>
+                          {rune.icon} {rune.name}
+                        </strong>
+                        <p className="muted">{rune.effect}</p>
+                        <div className="tool-row">
+                          <button
+                            className={`btn ${equippedInSlot1 ? 'primary' : ''}`}
+                            onClick={() => onSetLoadoutRune?.('slot1', rune.id)}
+                          >
+                            Slot 1 {equippedInSlot1 ? '✓' : ''}
+                          </button>
+                          <button
+                            className={`btn ${equippedInSlot2 ? 'primary' : ''}`}
+                            onClick={() => onSetLoadoutRune?.('slot2', rune.id)}
+                          >
+                            Slot 2 {equippedInSlot2 ? '✓' : ''}
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {SHOP_ITEMS.filter((i) => (state.inventory[i.id] ?? 0) > 0).map(
+                (item) => (
+                  <div key={item.id} className="inv-item">
                     <span>
-                      {item.cost} {item.currency === 'xp' ? 'XP' : 'OU'}
+                      {item.name} x{state.inventory[item.id]}
                     </span>
-                    <button
-                      className="btn"
-                      disabled={blocked}
-                      onClick={() => buy(item)}
-                    >
-                      COMPRAR
+                    <button className="btn" disabled>
+                      USAR
                     </button>
                   </div>
-                  <small className="muted">
-                    Qtd: {qty}/{item.maxStack}
-                  </small>
-                </article>
-              )
-            })}
-          </div>
-          {!filteredShopItems.length && (
-            <p className="muted">Nenhum item encontrado com esses filtros.</p>
-          )}
-        </>
-      ) : (
-        <div className="inv-list">
-          {SHOP_ITEMS.filter((i) => (state.inventory[i.id] ?? 0) > 0).map(
-            (item) => (
-              <div key={item.id} className="inv-item">
-                <span>
-                  {item.name} x{state.inventory[item.id]}
-                </span>
-                <button className="btn" disabled>
-                  USAR
-                </button>
-              </div>
-            ),
-          )}
-          {!SHOP_ITEMS.some((i) => (state.inventory[i.id] ?? 0) > 0) && (
-            <p className="muted">Inventário vazio.</p>
-          )}
-          {!inPhase && (
-            <p className="muted">Itens são usados dentro das fases.</p>
+                ),
+              )}
+              {!SHOP_ITEMS.some((i) => (state.inventory[i.id] ?? 0) > 0) && (
+                <p className="muted">Inventário vazio.</p>
+              )}
+              {!inPhase && (
+                <p className="muted">Itens são usados dentro das fases.</p>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
     </section>
   )
 }
 
-export function GrimorioScreen({ entries, onBack }) {
+export function GrimorioScreen({ state, entries, onNavigate }) {
   const sorted = [...entries].sort((a, b) => b.timestamp - a.timestamp)
   return (
-    <section className="screen">
-      <div className="back-header">
-        {onBack && (
-          <button className="btn-back" onClick={onBack} title="Voltar">
-            ← Voltar
-          </button>
-        )}
-        <h2 className="title">GRIMORIO ({entries.length})</h2>
-      </div>
-      {!entries.length && (
-        <p className="muted">
-          Nenhum erro registrado ainda — continue jogando!
-        </p>
-      )}
-      <div className="grim-list">
-        {sorted.map((e, i) => (
-          <article
-            key={`${e.timestamp}-${i}`}
-            className="grim-card"
-            style={{ borderLeftColor: phaseColor(e.fase) }}
-          >
-            <Tag color={phaseColor(e.fase)}>{e.fase}</Tag>
-            <p className="grim-int">{e.integral}</p>
-            <p className="muted">{e.conceito}</p>
-          </article>
-        ))}
+    <section className="screen rpg-layout grimorio-screen">
+      <div className="map-content-wrapper">
+        <RpgSidebar state={state} active="grimoire" onNavigate={onNavigate} />
+        <div className="map-main support-main">
+          <div className="back-header">
+            <h2 className="title">GRIMORIO ({entries.length})</h2>
+          </div>
+          {!entries.length && (
+            <p className="muted">
+              Nenhum erro registrado ainda — continue jogando!
+            </p>
+          )}
+          <div className="grim-list">
+            {sorted.map((e, i) => (
+              <article
+                key={`${e.timestamp}-${i}`}
+                className="grim-card"
+                style={{ borderLeftColor: phaseColor(e.fase) }}
+              >
+                <Tag color={phaseColor(e.fase)}>{e.fase}</Tag>
+                <p className="grim-int">{e.integral}</p>
+                <p className="muted">{e.conceito}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
 }
 
-export function TutorialScreen({ state, onBack }) {
+export function TutorialScreen({ state, onNavigate }) {
   const doneCount = state.done.length
   const stars = Object.values(state.stars).reduce((sum, v) => sum + v, 0)
 
   return (
-    <section className="screen tutorial-screen">
-      <div className="back-header">
-        {onBack && (
-          <button className="btn-back" onClick={onBack} title="Voltar">
-            ← Voltar
-          </button>
-        )}
-        <h2 className="title">Tutorial da Campanha</h2>
-      </div>
-      <p className="muted">
-        Este guia explica as mecanicas centrais e o fluxo completo da campanha,
-        do primeiro bioma ate o boss final.
-      </p>
-
-      <div className="assessment-grid">
-        <article className="assessment-card">
-          <h3>1) Objetivo da Campanha</h3>
-          <strong>Concluir o Mapa</strong>
+    <section className="screen rpg-layout tutorial-screen">
+      <div className="map-content-wrapper">
+        <RpgSidebar state={state} active="tutorial" onNavigate={onNavigate} />
+        <div className="map-main support-main">
+          <div className="back-header">
+            <h2 className="title">Tutorial da Campanha</h2>
+          </div>
           <p className="muted">
-            Termine as fases na ordem de desbloqueio, derrote os bosses e
-            finalize O Integral Supremo.
+            Este guia explica as mecanicas centrais e o fluxo completo da
+            campanha, da busca pelos selos da Coroa Arcana ate o confronto
+            final no Santuario do Limite.
           </p>
-        </article>
 
-        <article className="assessment-card">
-          <h3>2) Economia e Progresso</h3>
-          <strong>XP, Ouro e Estrelas</strong>
-          <p className="muted">
-            XP e Ouro sao ganhos por desempenho. Estrelas definem desbloqueios
-            de bosses e medem consistencia.
-          </p>
-        </article>
+          <div className="assessment-grid">
+            <article className="assessment-card">
+              <h3>1) Objetivo da Campanha</h3>
+              <strong>Restaurar a Coroa Arcana</strong>
+              <p className="muted">
+                Conclua os biomas para abrir caminho, vença os guardioes dos
+                selos e derrote O Integral Supremo para encerrar a campanha.
+              </p>
+            </article>
 
-        <article className="assessment-card">
-          <h3>3) Estado Atual</h3>
-          <strong>
-            {doneCount} fases | {stars} estrelas
-          </strong>
-          <p className="muted">
-            Use estes numeros para decidir se vale farmar mais recursos ou
-            avancar para desafios maiores.
-          </p>
-        </article>
-      </div>
+            <article className="assessment-card">
+              <h3>2) Economia e Progresso</h3>
+              <strong>XP, Ouro e Estrelas</strong>
+              <p className="muted">
+                XP e ganho nas fases e bosses. Ouro vem principalmente de
+                bosses e contratos. Estrelas definem desbloqueios e medem
+                consistencia.
+              </p>
+            </article>
 
-      <div className="assessment-panel">
-        <h3>Fluxo da Partida</h3>
-        <div className="grim-list">
-          <article className="grim-card" style={{ borderLeftColor: '#8f6630' }}>
-            <p>
-              1. Inicio: abra o Mapa e selecione uma fase desbloqueada (FORGE,
-              U-SUB, MEASURE, PARTES ou TFC).
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#8f6630' }}>
-            <p>
-              2. Execucao: resolva as questoes da fase para acumular score,
-              manter vida e ganhar recompensas no fim.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#8f6630' }}>
-            <p>
-              3. Resultado: ao concluir, voce recebe estrelas (1 a 3), XP e
-              Ouro. Melhor desempenho gera mais recursos.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#8f6630' }}>
-            <p>
-              4. Preparacao: use a Loja para comprar consumiveis antes de fases
-              dificeis e bosses.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#8f6630' }}>
-            <p>
-              5. Progressao: atinja os requisitos de estrelas para liberar
-              bosses, avance no mapa e finalize a campanha.
-            </p>
-          </article>
-        </div>
-      </div>
+            <article className="assessment-card">
+              <h3>3) Estado Atual</h3>
+              <strong>
+                {doneCount} fases | {stars} estrelas
+              </strong>
+              <p className="muted">
+                Use estes numeros para decidir se vale farmar mais recursos ou
+                avancar para desafios maiores.
+              </p>
+            </article>
+          </div>
 
-      <div className="assessment-panel">
-        <h3>Mecanicas de Cada Tipo de Fase</h3>
-        <div className="grim-list">
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              FORGE: monte a antiderivada com pecas. Erro custa vida e acerto
-              aumenta o score da fase.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              U-SUB e PARTES: fases em passos guiados (wizard). Cada etapa
-              correta avanca o processo de resolucao.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              MEASURE e TFC: combinam intuicao grafica e verificacao numerica. A
-              precisao final influencia seu desempenho.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              BOSSES: punicao alta por erro. Gerencie vida, tempo e itens para
-              sobreviver ate a ultima questao.
-            </p>
-          </article>
-        </div>
-      </div>
+          <div className="assessment-panel">
+            <h3>Fluxo da Partida</h3>
+            <div className="grim-list">
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#8f6630' }}
+              >
+                <p>
+                  1. Prologo: abra o Mapa, entre em FORGE e inicie a trilha
+                  para conquistar o Primeiro Selo.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#8f6630' }}
+              >
+                <p>
+                  2. Biomas: resolva as questoes para acumular score, manter
+                  vida e ganhar recursos para os confrontos principais.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#8f6630' }}
+              >
+                <p>
+                  3. Resultado: ao concluir, voce recebe estrelas (1 a 3), XP e
+                  Ouro. Melhor desempenho acelera desbloqueios e fortalece sua
+                  rota narrativa.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#8f6630' }}
+              >
+                <p>
+                  4. Preparacao: use Loja, Talentos e Runas antes de cada boss
+                  para sustentar o progresso entre os selos.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#8f6630' }}
+              >
+                <p>
+                  5. Climax: apos vencer o Guardiao das Raizes e o Arquimago da
+                  Caverna, enfrente O Integral Supremo e finalize a historia.
+                </p>
+              </article>
+            </div>
+          </div>
 
-      <div className="assessment-panel">
-        <h3>Itens e Decisao Tatica</h3>
-        <div className="grim-list">
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              Escudo de Vida: ignora um erro. Ideal para boss ou questao final.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              Pocao de Dica: mostra orientacao conceitual sem revelar resposta.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              Pocao de Eliminar: reduz alternativas erradas em questoes
-              objetivas.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>Pergaminho do Mago: revela o primeiro passo em fases wizard.</p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              Ampulheta: adiciona tempo em bosses. Use quando o cronometro
-              apertar.
-            </p>
-          </article>
-          <article className="grim-card" style={{ borderLeftColor: '#7a572a' }}>
-            <p>
-              Cristal de Revisao: puxa uma revisao do Grimorio para reforcar
-              conceitos.
-            </p>
-          </article>
+          <div className="assessment-panel">
+            <h3>Mecanicas de Cada Tipo de Fase</h3>
+            <div className="grim-list">
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  FORGE: monte a antiderivada com pecas. Erro custa vida e
+                  acerto aumenta o score da fase.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  U-SUB e PARTES: fases em passos guiados (wizard). Cada etapa
+                  correta avanca o processo de resolucao.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  MEASURE e TFC: combinam intuicao grafica e verificacao
+                  numerica. A precisao final influencia seu desempenho.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  BOSSES: punicao alta por erro. Gerencie vida, tempo e itens
+                  para sobreviver ate a ultima questao.
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <div className="assessment-panel">
+            <h3>Itens e Decisao Tatica</h3>
+            <div className="grim-list">
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Escudo de Vida: ignora um erro. Ideal para boss ou questao
+                  final.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Pocao de Dica: mostra orientacao conceitual sem revelar
+                  resposta.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Pocao de Eliminar: reduz alternativas erradas em questoes
+                  objetivas.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Pergaminho do Mago: revela o primeiro passo em fases wizard.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Ampulheta: adiciona tempo em bosses. Use quando o cronometro
+                  apertar.
+                </p>
+              </article>
+              <article
+                className="grim-card"
+                style={{ borderLeftColor: '#7a572a' }}
+              >
+                <p>
+                  Cristal de Revisao: puxa uma revisao do Grimorio para reforcar
+                  conceitos.
+                </p>
+              </article>
+            </div>
+          </div>
         </div>
       </div>
     </section>

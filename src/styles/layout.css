@@ -1,21 +1,21 @@
 /* ===== RPG MENU LATERAL ===== */
 .rpg-menu {
   width: 180px;
-  background: linear-gradient(180deg, #2b1e12, #1e150d);
-  border-right: 2px solid rgba(179, 137, 75, 0.35);
-  padding: 16px;
+  background: linear-gradient(180deg, #efe1c2, #e4cfaa);
+  border-right: 2px solid rgba(122, 90, 42, 0.34);
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   position: relative;
-  box-shadow: inset -8px 0 16px rgba(0, 0, 0, 0.4);
+  box-shadow: inset -6px 0 10px rgba(102, 73, 37, 0.12);
   flex-shrink: 0;
 }
 
 .menu-header {
   text-align: center;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(179, 137, 75, 0.28);
+  border-bottom: 1px solid rgba(122, 90, 42, 0.3);
 }
 
 .menu-header h3 {
@@ -23,23 +23,26 @@
   font-family: var(--display);
   font-size: 0.9rem;
   letter-spacing: 1.5px;
-  color: #d3b07a;
-  text-shadow: 0 0 8px rgba(121, 85, 41, 0.35);
+  color: #5f4020;
+  text-shadow: none;
 }
 
 .menu-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.6rem;
   flex: 1;
 }
 
 .menu-btn {
   padding: 10px 8px;
-  background: linear-gradient(135deg, rgba(179, 137, 75, 0.14), transparent);
-  border: 1px solid rgba(179, 137, 75, 0.25);
+  background: linear-gradient(
+    rgba(237, 223, 192, 0.92),
+    rgba(209, 178, 128, 0.7)
+  );
+  border: 1px solid rgba(112, 80, 40, 0.36);
   border-radius: 8px;
-  color: #e7d8be;
+  color: #4f3418;
   font-family: var(--font);
   font-size: 0.8rem;
   font-weight: 600;
@@ -50,16 +53,28 @@
   text-align: left;
 }
 
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.menu-section-title {
+  margin: 0;
+  padding: 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #7a5534;
+  text-transform: uppercase;
+}
+
 .menu-btn:hover,
 .menu-btn.active {
-  background: linear-gradient(
-    135deg,
-    rgba(179, 137, 75, 0.35),
-    rgba(179, 137, 75, 0.16)
-  );
-  border-color: rgba(212, 170, 103, 0.6);
-  color: #f1d7aa;
-  box-shadow: 0 0 12px rgba(121, 85, 41, 0.3);
+  background: linear-gradient(90deg, #7a552a, #b98c53);
+  border-color: rgba(122, 90, 42, 0.56);
+  color: #f8e7c4;
+  box-shadow: 0 6px 16px rgba(92, 63, 29, 0.2);
 }
 
 .menu-stats {
@@ -67,7 +82,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid rgba(179, 137, 75, 0.3);
+  border-top: 1px solid rgba(122, 90, 42, 0.3);
 }
 
 .stat-item {
@@ -75,9 +90,13 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: rgba(179, 137, 75, 0.14);
+  background: linear-gradient(
+    160deg,
+    rgba(232, 214, 181, 0.8),
+    rgba(212, 181, 130, 0.6)
+  );
   border-radius: 6px;
-  border: 1px solid rgba(179, 137, 75, 0.25);
+  border: 1px solid rgba(112, 80, 40, 0.3);
 }
 
 .stat-icon {
@@ -87,7 +106,7 @@
 .stat-val {
   font-family: var(--display);
   font-weight: 700;
-  color: #fbbf24;
+  color: #5f4020;
   font-size: 0.95rem;
 }
 
@@ -95,17 +114,19 @@
 .map-main {
   flex: 1;
   overflow: auto;
-  padding: 20px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
+  min-height: 0;
 }
 
 /* ===== MAP CONTAINER ===== */
 .map-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
+  min-height: 0;
 }
 
 .map-header {
@@ -139,7 +160,7 @@
 .dashboard-apex {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 10px;
   animation: slideInDown 0.6s ease both 0.1s;
 }
 
@@ -147,7 +168,7 @@
   position: relative;
   border: 2px solid;
   border-radius: 18px;
-  padding: 20px;
+  padding: 12px;
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.05),
@@ -156,7 +177,7 @@
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
-  min-height: 240px;
+  min-height: clamp(132px, 24vh, 210px);
   display: flex;
   flex-direction: column;
 }
@@ -230,8 +251,8 @@
 }
 
 .card-icon-big {
-  font-size: 3rem;
-  margin-bottom: 8px;
+  font-size: 2rem;
+  margin-bottom: 4px;
   animation: float-bounce 2.5s ease-in-out infinite;
 }
 
@@ -249,7 +270,7 @@
 }
 
 .stat-value {
-  font-size: 2.2rem;
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
   font-family: var(--display);
   font-weight: 900;
   color: #fbbf24;
@@ -311,7 +332,7 @@
 }
 
 .objective-name {
-  font-size: 1.3rem;
+  font-size: 1.06rem;
   font-weight: 700;
   color: #7a572a;
   margin: 12px 0;
@@ -319,7 +340,7 @@
 }
 
 .victory-message {
-  font-size: 2rem;
+  font-size: 1.4rem;
   color: #fbbf24;
   margin: 12px 0;
   font-weight: 900;
@@ -334,8 +355,31 @@
 
 .large-btn {
   width: 100%;
-  padding: 12px;
-  margin-top: 12px;
-  font-size: 1rem;
+  padding: 10px;
+  margin-top: 8px;
+  font-size: 0.95rem;
   font-weight: 700;
+}
+
+@media (max-height: 860px) {
+  .map-header {
+    margin-bottom: 2px;
+  }
+
+  .map-title {
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+  }
+
+  .map-subtitle {
+    font-size: 0.86rem;
+  }
+
+  .hints-section {
+    margin-top: 6px;
+    padding: 8px;
+  }
+
+  .hint-chip {
+    padding: 8px;
+  }
 }
