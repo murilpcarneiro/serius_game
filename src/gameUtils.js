@@ -1,4 +1,5 @@
 import { G } from './gameData'
+import { PHASE_UNLOCK_RULES } from './constants/phaseUnlockConstants'
 
 export function calcStars(hp, totalHp, score, totalQuestions) {
   const hpRatio = hp / totalHp
@@ -10,23 +11,7 @@ export function calcStars(hp, totalHp, score, totalQuestions) {
 }
 
 export function isUnlocked(phaseId, done, stars) {
-  const rules = {
-    forge: () => true,
-    usub: () => done.includes('forge'),
-    measure: () => done.includes('forge'),
-    boss_forge: () => done.includes('forge') && (stars.forge ?? 0) >= 3,
-    parts: () => done.includes('boss_forge'),
-    connect: () => done.includes('measure') && done.includes('usub'),
-    boss_usub_parts: () =>
-      done.includes('parts') &&
-      done.includes('connect') &&
-      (stars.parts ?? 0) >= 3 &&
-      (stars.connect ?? 0) >= 3,
-    boss_final: () =>
-      done.includes('boss_usub_parts') && (stars.boss_usub_parts ?? 0) >= 3,
-  }
-
-  return rules[phaseId]?.() ?? false
+  return PHASE_UNLOCK_RULES[phaseId]?.(done, stars) ?? false
 }
 
 export function phaseColor(phase) {

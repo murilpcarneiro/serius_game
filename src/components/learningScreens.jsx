@@ -1,17 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CONNECT_Q, FORGE_Q, G, MEASURE_Q } from '../gameData'
 import { addToGrimoire } from '../gameUtils'
+import { PHASE_TARGET_QUESTIONS } from '../constants/learningConstants'
+import {
+  categoryLabel,
+  selectQuestionsForRun,
+  shuffleItems,
+} from '../utils/questionUtils'
 import { CrystalModal, Feedback, HP, ItemBar, LoreCard, Tag } from './ui'
 import { usePhaseLife } from './usePhaseLife'
-
-const shuffleItems = (items) => {
-  const next = [...items]
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[next[i], next[j]] = [next[j], next[i]]
-  }
-  return next
-}
 
 function PhaseDefeatScreen({ onBackMap }) {
   return (
@@ -32,18 +29,29 @@ export function ForgeScreen({
   itemStatus,
   consumeItem,
   onExit,
+  rpgModifiers,
 }) {
+  const phaseQuestions = useMemo(
+    () =>
+      selectQuestionsForRun(
+        'forge',
+        FORGE_Q,
+        PHASE_TARGET_QUESTIONS.forge ?? FORGE_Q.length,
+      ),
+    [],
+  )
   const [idx, setIdx] = useState(0)
   const [slots, setSlots] = useState(['', ''])
   const [feedback, setFeedback] = useState(null)
   const [shake, setShake] = useState(false)
+  const [freeHintUsed, setFreeHintUsed] = useState(false)
   const [score, setScore] = useState(0)
   const [reviewEntry, setReviewEntry] = useState(null)
   const [pieceOrder, setPieceOrder] = useState([])
   const [isResolving, setIsResolving] = useState(false)
   const [defeated, setDefeated] = useState(false)
 
-  const q = FORGE_Q[idx]
+  const q = phaseQuestions[idx]
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
     {
       state,
@@ -55,6 +63,7 @@ export function ForgeScreen({
         setIsResolving(false)
         setDefeated(true)
       },
+      initialShield: rpgModifiers?.hasStartShield,
     },
   )
 
@@ -64,6 +73,7 @@ export function ForgeScreen({
     setSlots(['', ''])
     setShake(false)
     setIsResolving(false)
+    setFreeHintUsed(false)
   }, [idx, q?.display])
 
   if (!q) {
@@ -107,8 +117,8 @@ export function ForgeScreen({
       const nextScore = score + 1
       setScore(nextScore)
       setTimeout(() => {
-        if (idx + 1 >= FORGE_Q.length) {
-          onComplete('forge', nextScore, FORGE_Q.length, state.hp)
+        if (idx + 1 >= phaseQuestions.length) {
+          onComplete('forge', nextScore, phaseQuestions.length, state.hp)
         } else {
           setIdx((v) => v + 1)
           setFeedback(null)
@@ -118,11 +128,12 @@ export function ForgeScreen({
       return
     }
 
-    addToGrimoire(setState, 'FORGE', q.hint, q.display)
+    const category = categoryLabel('FORGE')
+    addToGrimoire(setState, 'FORGE', `${category}: ${q.hint}`, q.display)
     if (!consumeShield()) {
       damage()
     }
-    setFeedback({ msg: `✗ Incorreto. ${q.hint}`, type: 'err' })
+    setFeedback({ msg: `✗ Incorreto. [${category}] ${q.hint}`, type: 'err' })
     setShake(true)
     setTimeout(() => {
       setShake(false)
@@ -132,9 +143,12 @@ export function ForgeScreen({
   }
 
   const useItem = (itemId) => {
-    if (!itemStatus(itemId).can) return
+    const freeHintAvailable =
+      itemId === 'potion_hint' && rpgModifiers?.hasFreeHint && !freeHintUsed
+    if (!itemStatus(itemId).can && !freeHintAvailable) return
     if (itemId === 'potion_hint') {
-      consumeItem(itemId)
+      if (!freeHintAvailable) consumeItem(itemId)
+      if (freeHintAvailable) setFreeHintUsed(true)
       setFeedback({ msg: `${q.hint}`, type: 'hint' })
     }
     if (itemId === 'shield_life' && !shieldActive) {
@@ -168,7 +182,7 @@ export function ForgeScreen({
           <div className="phase-badge">
             <Tag color={G.green}>{q.biome}</Tag>
             <span className="phase-counter">
-              {idx + 1} de {FORGE_Q.length}
+              {idx + 1} de {phaseQuestions.length}
             </span>
           </div>
           <div className="phase-stats">
@@ -263,9 +277,9 @@ export function ForgeScreen({
             <div className="review-content">
               <p className="review-label">Revisao do Grimorio:</p>
               <div className="review-entry">
-                <strong>{reviewEntry.phaseTag}</strong>
-                <p>{reviewEntry.concept}</p>
-                <small>{reviewEntry.hint}</small>
+                <strong>{reviewEntry.fase}</strong>
+                <p>{reviewEntry.integral}</p>
+                <small>{reviewEntry.conceito}</small>
               </div>
               <button className="btn" onClick={() => setReviewEntry(null)}>
                 Entendi
@@ -289,13 +303,13 @@ export function ForgeScreen({
               className={`item-btn ${!itmStatus.can ? 'disabled' : ''}`}
               onClick={() => useItem(itemId)}
               title={
-                itmStatus.count > 0
-                  ? `${itmStatus.count} disponível(is)`
+                itmStatus.qty > 0
+                  ? `${itmStatus.qty} disponível(is)`
                   : 'Sem itens'
               }
             >
               <span className="item-label">{labelMap[itemId]}</span>
-              <span className="item-count">x{itmStatus.count}</span>
+              <span className="item-count">x{itmStatus.qty}</span>
             </button>
           )
         })}
@@ -314,8 +328,13 @@ export function WizardScreen({
   onComplete,
   itemStatus,
   consumeItem,
+  rpgModifiers,
   onExit,
 }) {
+  const phaseQuestions = useMemo(() => {
+    const target = PHASE_TARGET_QUESTIONS[phaseId] ?? questions.length
+    return selectQuestionsForRun(phaseId, questions, target)
+  }, [phaseId, questions])
   const [qIdx, setQIdx] = useState(0)
   const [step, setStep] = useState(0)
   const [stepMark, setStepMark] = useState([])
@@ -327,8 +346,9 @@ export function WizardScreen({
   const [isResolving, setIsResolving] = useState(false)
   const [optionOrder, setOptionOrder] = useState([])
   const [defeated, setDefeated] = useState(false)
+  const [freeHintUsed, setFreeHintUsed] = useState(false)
 
-  const q = questions[qIdx]
+  const q = phaseQuestions[qIdx]
   const curr = q?.steps?.[step]
 
   useEffect(() => {
@@ -351,6 +371,7 @@ export function WizardScreen({
         setIsResolving(false)
         setDefeated(true)
       },
+      initialShield: rpgModifiers?.hasStartShield,
     },
   )
 
@@ -401,14 +422,15 @@ export function WizardScreen({
           setScore(nextScore)
           setFeedback({ msg: `✓ ${q.ok} · +${q.xp} XP`, type: 'ok' })
           setTimeout(() => {
-            if (qIdx + 1 >= questions.length) {
-              onComplete(phaseId, nextScore, questions.length, state.hp)
+            if (qIdx + 1 >= phaseQuestions.length) {
+              onComplete(phaseId, nextScore, phaseQuestions.length, state.hp)
             } else {
               setQIdx((v) => v + 1)
               setStep(0)
               setStepMark([])
               setEliminated({})
               setRevealFirst(false)
+              setFreeHintUsed(false)
               setFeedback(null)
             }
           }, 1300)
@@ -421,20 +443,32 @@ export function WizardScreen({
       const marks = [...stepMark]
       marks[step] = 'err'
       setStepMark(marks)
-      addToGrimoire(setState, phaseName, curr.explain, q.display)
+      const category = categoryLabel(phaseName)
+      addToGrimoire(
+        setState,
+        phaseName,
+        `${category}: ${curr.explain}`,
+        q.display,
+      )
       if (!consumeShield()) {
         damage()
       }
-      setFeedback({ msg: `✗ Incorreto. ${curr.explain}`, type: 'err' })
+      setFeedback({
+        msg: `✗ Incorreto. [${category}] ${curr.explain}`,
+        type: 'err',
+      })
       setTimeout(() => setIsResolving(false), 650)
     }
   }
 
   const useItem = (itemId) => {
-    if (!itemStatus(itemId).can) return
+    const freeHintAvailable =
+      itemId === 'potion_hint' && rpgModifiers?.hasFreeHint && !freeHintUsed
+    if (!itemStatus(itemId).can && !freeHintAvailable) return
 
     if (itemId === 'potion_hint') {
-      consumeItem(itemId)
+      if (!freeHintAvailable) consumeItem(itemId)
+      if (freeHintAvailable) setFreeHintUsed(true)
       setFeedback({ msg: `${q.hint || curr.explain}`, type: 'hint' })
     }
     if (itemId === 'shield_life' && !shieldActive) {
@@ -552,16 +586,27 @@ export function MeasureScreen({
   onComplete,
   itemStatus,
   consumeItem,
+  rpgModifiers,
   onExit,
 }) {
+  const phaseQuestions = useMemo(
+    () =>
+      selectQuestionsForRun(
+        'measure',
+        MEASURE_Q,
+        PHASE_TARGET_QUESTIONS.measure ?? MEASURE_Q.length,
+      ),
+    [],
+  )
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
   const [feedback, setFeedback] = useState(null)
   const [score, setScore] = useState(0)
   const [reviewEntry, setReviewEntry] = useState(null)
   const [defeated, setDefeated] = useState(false)
+  const [freeHintUsed, setFreeHintUsed] = useState(false)
 
-  const q = MEASURE_Q[idx]
+  const q = phaseQuestions[idx]
 
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
     {
@@ -573,6 +618,7 @@ export function MeasureScreen({
         setFeedback({ msg: 'Vidas esgotadas.', type: 'err' })
         setDefeated(true)
       },
+      initialShield: rpgModifiers?.hasStartShield,
     },
   )
 
@@ -610,6 +656,7 @@ export function MeasureScreen({
   useEffect(() => {
     if (!q) return
     setInput('')
+    setFreeHintUsed(false)
   }, [idx])
 
   if (defeated) {
@@ -632,30 +679,38 @@ export function MeasureScreen({
       const nextScore = score + 1
       setScore(nextScore)
       setTimeout(() => {
-        if (idx + 1 >= MEASURE_Q.length) {
-          onComplete('measure', nextScore, MEASURE_Q.length, state.hp)
+        if (idx + 1 >= phaseQuestions.length) {
+          onComplete('measure', nextScore, phaseQuestions.length, state.hp)
         } else {
           const ni = idx + 1
           setIdx(ni)
           setInput('')
-          setStage(1)
           setFeedback(null)
         }
       }, 1300)
     } else {
-      addToGrimoire(setState, 'MEASURE', q.hint, `${q.label}, [${q.a}, ${q.b}]`)
+      const category = categoryLabel('MEASURE')
+      addToGrimoire(
+        setState,
+        'MEASURE',
+        `${category}: ${q.hint}`,
+        `${q.topLabel} vs ${q.bottomLabel}, [${q.a}, ${q.b}]`,
+      )
       if (!consumeShield()) {
         damage()
       }
-      setFeedback({ msg: `✗ Incorreto. ${q.hint}`, type: 'err' })
+      setFeedback({ msg: `✗ Incorreto. [${category}] ${q.hint}`, type: 'err' })
       setInput('')
     }
   }
 
   const useItem = (itemId) => {
-    if (!itemStatus(itemId).can) return
+    const freeHintAvailable =
+      itemId === 'potion_hint' && rpgModifiers?.hasFreeHint && !freeHintUsed
+    if (!itemStatus(itemId).can && !freeHintAvailable) return
     if (itemId === 'potion_hint') {
-      consumeItem(itemId)
+      if (!freeHintAvailable) consumeItem(itemId)
+      if (freeHintAvailable) setFreeHintUsed(true)
       setFeedback({ msg: `${q.hint}`, type: 'hint' })
     }
     if (itemId === 'shield_life' && !shieldActive) {
@@ -740,8 +795,18 @@ export function ConnectScreen({
   onComplete,
   itemStatus,
   consumeItem,
+  rpgModifiers,
   onExit,
 }) {
+  const phaseQuestions = useMemo(
+    () =>
+      selectQuestionsForRun(
+        'connect',
+        CONNECT_Q,
+        PHASE_TARGET_QUESTIONS.connect ?? CONNECT_Q.length,
+      ),
+    [],
+  )
   const [idx, setIdx] = useState(0)
   const [stage, setStage] = useState(0)
   const [feedback, setFeedback] = useState(null)
@@ -752,8 +817,9 @@ export function ConnectScreen({
   const [isResolving, setIsResolving] = useState(false)
   const [optionOrder, setOptionOrder] = useState([])
   const [defeated, setDefeated] = useState(false)
+  const [freeHintUsed, setFreeHintUsed] = useState(false)
 
-  const q = CONNECT_Q[idx]
+  const q = phaseQuestions[idx]
 
   const { shieldActive, setShieldActive, consumeShield, damage } = usePhaseLife(
     {
@@ -766,6 +832,7 @@ export function ConnectScreen({
         setIsResolving(false)
         setDefeated(true)
       },
+      initialShield: rpgModifiers?.hasStartShield,
     },
   )
 
@@ -776,6 +843,7 @@ export function ConnectScreen({
     setEliminated(null)
     setInput('')
     setIsResolving(false)
+    setFreeHintUsed(false)
   }, [idx, q?.integral])
 
   if (!q) {
@@ -810,11 +878,12 @@ export function ConnectScreen({
   )
 
   const onWrong = (hintText) => {
-    addToGrimoire(setState, 'CONNECT', hintText, q.integral)
+    const category = categoryLabel('CONNECT')
+    addToGrimoire(setState, 'CONNECT', `${category}: ${hintText}`, q.integral)
     if (!consumeShield()) {
       damage()
     }
-    setFeedback({ msg: `✗ Incorreto. ${hintText}`, type: 'err' })
+    setFeedback({ msg: `✗ Incorreto. [${category}] ${hintText}`, type: 'err' })
   }
 
   const submitNum = () => {
@@ -829,8 +898,8 @@ export function ConnectScreen({
       const nextScore = score + 1
       setScore(nextScore)
       setTimeout(() => {
-        if (idx + 1 >= CONNECT_Q.length) {
-          onComplete('connect', nextScore, CONNECT_Q.length, state.hp)
+        if (idx + 1 >= phaseQuestions.length) {
+          onComplete('connect', nextScore, phaseQuestions.length, state.hp)
         } else {
           setIdx((v2) => v2 + 1)
           setStage(0)
@@ -848,9 +917,12 @@ export function ConnectScreen({
   }
 
   const useItem = (itemId) => {
-    if (!itemStatus(itemId).can) return
+    const freeHintAvailable =
+      itemId === 'potion_hint' && rpgModifiers?.hasFreeHint && !freeHintUsed
+    if (!itemStatus(itemId).can && !freeHintAvailable) return
     if (itemId === 'potion_hint') {
-      consumeItem(itemId)
+      if (!freeHintAvailable) consumeItem(itemId)
+      if (freeHintAvailable) setFreeHintUsed(true)
       setFeedback({ msg: `${q.hint}`, type: 'hint' })
     }
     if (itemId === 'shield_life' && !shieldActive) {

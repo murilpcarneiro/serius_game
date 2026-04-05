@@ -1,6 +1,21 @@
-import { useMemo } from 'react'
-import { G, MAP_EDGES, MAP_NODES } from '../gameData'
+import { useMemo, useState } from 'react'
+import {
+  G,
+  MAP_EDGES,
+  MAP_NODES,
+  NPC_REPUTATION,
+  RPG_CLASSES,
+} from '../gameData'
+import { MAP_NODE_ICON_BY_ID } from '../constants/mapConstants'
 import { isUnlocked } from '../gameUtils'
+import {
+  buildSessionChecklist,
+  getCampaignBeat,
+  sortQuestsByStatus,
+} from '../utils/homeUtils'
+import { createEdgePath, getUnlockHint } from '../utils/mapUtils'
+import { HomeOverviewPanels, HomeRpgPanel } from './homePanels'
+import { RpgSidebar } from './rpgSidebar'
 import { Tag } from './ui'
 
 export function HomeScreen({
@@ -9,6 +24,13 @@ export function HomeScreen({
   onOpenMap,
   onOpenShop,
   onOpenGrimoire,
+  onResetCampaign,
+  lastSavedAt,
+  availableTalentPoints,
+  quests,
+  onChooseClass,
+  onSpendTalent,
+  onClaimQuest,
 }) {
   const completed = state.done.length
   const totalStars = Object.values(state.stars).reduce((sum, s) => sum + s, 0)
@@ -16,7 +38,37 @@ export function HomeScreen({
   const playerLevel = Math.floor(state.xp / 100) + 1
   const isFirstRun = completed === 0 && state.xp === 0 && state.gold === 0
   const nextPhase =
-    state.done.length < MAP_NODES.length ? MAP_NODES[state.done.length] : null
+    MAP_NODES.find(
+      (node) =>
+        isUnlocked(node.id, state.done, state.stars) &&
+        !state.done.includes(node.id),
+    ) ?? null
+  const saveLabel = lastSavedAt
+    ? new Date(lastSavedAt).toLocaleString('pt-BR')
+    : 'Ainda não salvo'
+  const currentClass = RPG_CLASSES.find(
+    (entry) => entry.id === state.playerClass,
+  )
+  const [rpgTab, setRpgTab] = useState('profile')
+  const questsDone = (quests ?? []).filter((quest) => quest.done).length
+  const questsClaimable = (quests ?? []).filter(
+    (quest) => quest.done && !quest.claimed,
+  ).length
+  const repValues = NPC_REPUTATION.map((npc) => state.reputation?.[npc.id] ?? 0)
+  const repAvg = repValues.length
+    ? (
+        repValues.reduce((sum, value) => sum + value, 0) / repValues.length
+      ).toFixed(1)
+    : '0.0'
+  const equippedRunes = [state.loadout?.slot1, state.loadout?.slot2].filter(
+    Boolean,
+  )
+  const sortedQuests = sortQuestsByStatus(quests ?? [])
+  const beat = getCampaignBeat(state, completed)
+  const journeyPreview = MAP_NODES.slice(0, 6)
+  const isNewPlayer =
+    completed === 0 && state.xp === 0 && state.gold === 0 && !state.playerClass
+  const sessionChecklist = buildSessionChecklist(state)
 
   return (
     <section className="screen home-screen">
@@ -24,8 +76,8 @@ export function HomeScreen({
         <p className="hero-kicker">Campanha de Calculo Integral</p>
         <h1 className="glow-text">∫NTEGRA</h1>
         <p className="hero-sub">
-          Explore biomas matemáticos, domine técnicas de integração e enfrente
-          chefes lendários.
+          Restaure a Coroa Arcana dominando tecnicas de integracao, protegendo
+          selos e derrotando o Integral Supremo no Santuario final.
         </p>
 
         <div className="player-level-display">
@@ -55,90 +107,49 @@ export function HomeScreen({
         </div>
       </div>
 
-      <div className="home-panels">
-        <article className="home-card card-progress">
-          <div className="card-header">
-            <small>PROGRESSO DA CAMPANHA</small>
-            <span className="card-badge">{Math.ceil(progressPct)}%</span>
-          </div>
-          <strong className="big-stat">
-            {completed}/{MAP_NODES.length}
-          </strong>
-          <p className="card-sub">fases concluídas</p>
-          <div className="progress-bars">
-            <div className="mini-meter">
-              <div
-                className="mini-meter-fill"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <div className="phase-dots">
-              {MAP_NODES.map((_, i) => (
-                <span
-                  key={i}
-                  className={`dot ${state.done.includes(i) ? 'done' : ''}`}
-                  title={`Fase ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        </article>
+      <div className={`home-panels rpg-tab-${rpgTab}`}>
+        <HomeOverviewPanels
+          state={state}
+          completed={completed}
+          totalStars={totalStars}
+          progressPct={progressPct}
+          beat={beat}
+          journeyPreview={journeyPreview}
+          nextPhase={nextPhase}
+          saveLabel={saveLabel}
+          currentClass={currentClass}
+          questsDone={questsDone}
+          questsLength={(quests ?? []).length}
+          availableTalentPoints={availableTalentPoints}
+          questsClaimable={questsClaimable}
+          onOpenShop={onOpenShop}
+          onOpenGrimoire={onOpenGrimoire}
+          onResetCampaign={onResetCampaign}
+          sessionChecklist={sessionChecklist}
+          isNewPlayer={isNewPlayer}
+        />
 
-        <article className="home-card card-resources">
-          <div className="card-header">
-            <small>RECURSOS E PODER</small>
-          </div>
-          <div className="resource-flex">
-            <div className="resource-item">
-              <span className="resource-icon">XP</span>
-              <div>
-                <p className="resource-value">{state.xp}</p>
-                <p className="resource-label">XP</p>
-              </div>
-            </div>
-            <div className="resource-item">
-              <span className="resource-icon">OU</span>
-              <div>
-                <p className="resource-value">{state.gold}</p>
-                <p className="resource-label">OURO</p>
-              </div>
-            </div>
-            <div className="resource-item">
-              <span className="resource-icon">ST</span>
-              <div>
-                <p className="resource-value">{totalStars}</p>
-                <p className="resource-label">ESTRELAS</p>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article className="home-card card-quick">
-          <div className="card-header">
-            <small>ACESSO RAPIDO</small>
-          </div>
-          <div className="quick-buttons">
-            <button className="btn small-btn" onClick={onOpenShop}>
-              Loja
-            </button>
-            <button className="btn small-btn" onClick={onOpenGrimoire}>
-              Grimorio
-            </button>
-          </div>
-          {nextPhase && (
-            <div className="next-challenge">
-              <p className="next-label">Próximo Desafio:</p>
-              <p className="next-name">{nextPhase.name}</p>
-            </div>
-          )}
-        </article>
+        <HomeRpgPanel
+          state={state}
+          rpgTab={rpgTab}
+          setRpgTab={setRpgTab}
+          currentClass={currentClass}
+          repAvg={repAvg}
+          equippedRunes={equippedRunes}
+          questsDone={questsDone}
+          questsLength={(quests ?? []).length}
+          availableTalentPoints={availableTalentPoints}
+          sortedQuests={sortedQuests}
+          onChooseClass={onChooseClass}
+          onSpendTalent={onSpendTalent}
+          onClaimQuest={onClaimQuest}
+        />
       </div>
     </section>
   )
 }
 
 export function MapScreen({ state, onOpen }) {
-  const map = useMemo(() => new Map(MAP_NODES.map((n) => [n.id, n])), [])
   const unlockedNodes = MAP_NODES.filter((n) =>
     isUnlocked(n.id, state.done, state.stars),
   )
@@ -156,96 +167,10 @@ export function MapScreen({ state, onOpen }) {
     return map
   }, [])
 
-  const unlockHint = (id) => {
-    if (isUnlocked(id, state.done, state.stars)) return 'Pronto para jogar'
-    if (id === 'usub') return 'Conclua FORGE'
-    if (id === 'measure') return 'Conclua FORGE'
-    if (id === 'boss_forge') return 'FORGE precisa de 3 estrelas'
-    if (id === 'parts') return 'Derrote Guardião das Raízes'
-    if (id === 'connect') return 'Conclua U-SUB e MEASURE'
-    if (id === 'boss_usub_parts') return 'PARTES e CONNECT com 3 estrelas'
-    if (id === 'boss_final') return 'Derrote Arquimago com 3 estrelas'
-    return 'Bloqueado'
-  }
-
-  const nodeIcon = {
-    forge: 'F',
-    usub: 'U',
-    measure: 'A',
-    boss_forge: 'G',
-    parts: 'P',
-    connect: 'T',
-    boss_usub_parts: 'M',
-    boss_final: 'R',
-  }
-
-  const edgePath = (from, to, idx) => {
-    const midX = (from.x + to.x) / 2
-    const midY = (from.y + to.y) / 2
-    const bend = idx % 2 === 0 ? -28 : 28
-    return `M ${from.x} ${from.y} Q ${midX} ${midY + bend} ${to.x} ${to.y}`
-  }
-
   return (
     <section className="screen map-screen rpg-layout">
       <div className="map-content-wrapper">
-        {/* MENU LATERAL RPG */}
-        <aside className="rpg-menu">
-          <div className="menu-header">
-            <h3>CMDOS</h3>
-          </div>
-          <nav className="menu-nav">
-            <button
-              className="menu-btn active"
-              title="Visualizar mapa da campanha"
-            >
-              MAPA
-            </button>
-            <button
-              className="menu-btn"
-              onClick={() => onOpen('shop')}
-              title="Comprar itens"
-            >
-              SHOP
-            </button>
-            <button
-              className="menu-btn"
-              onClick={() => onOpen('grimoire')}
-              title="Revisar conceitos"
-            >
-              GRIMORIO
-            </button>
-            <button
-              className="menu-btn"
-              onClick={() => onOpen('tutorial')}
-              title="Guia de jogo"
-            >
-              TUTORIAL
-            </button>
-            <button
-              className="menu-btn"
-              onClick={() => onOpen('home')}
-              title="Voltar ao início"
-            >
-              HOME
-            </button>
-          </nav>
-
-          <div className="menu-stats">
-            <div className="stat-item">
-              <span className="stat-icon">XP</span>
-              <span className="stat-val">{state.xp}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-icon">OU</span>
-              <span className="stat-val">{state.gold}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-icon">HP</span>
-              <span className="stat-val">{state.hp}</span>
-            </div>
-          </div>
-        </aside>
+        <RpgSidebar state={state} active="map" onNavigate={onOpen} />
 
         {/* CONTEÚDO PRINCIPAL */}
         <div className="map-main">
@@ -257,6 +182,21 @@ export function MapScreen({ state, onOpen }) {
               </p>
             </div>
             <Tag color={G.accent}>Campanha Ativa</Tag>
+          </div>
+
+          <div className="map-quick-guide">
+            <div className="map-guide-item">
+              <strong>1. Clique em uma fase liberada</strong>
+              <p>Os nós coloridos mostram o que já pode ser jogado agora.</p>
+            </div>
+            <div className="map-guide-item">
+              <strong>2. Resolva a fase</strong>
+              <p>Cada acerto rende XP, estrelas e abre caminho para bosses.</p>
+            </div>
+            <div className="map-guide-item">
+              <strong>3. Use a loja e o grimório</strong>
+              <p>Itens e revisões ajudam antes das fases mais difíceis.</p>
+            </div>
           </div>
 
           {/* DASHBOARD - 3 CARDS PRINCIPAIS */}
@@ -376,38 +316,46 @@ export function MapScreen({ state, onOpen }) {
                     />
                   </pattern>
                   <pattern
-                    id="old-map-texture"
-                    width="420"
-                    height="420"
+                    id="paper-speckle"
+                    width="120"
+                    height="120"
                     patternUnits="userSpaceOnUse"
                   >
-                    <image
-                      href="https://www.transparenttextures.com/patterns/old-map.png"
-                      x="0"
-                      y="0"
-                      width="420"
-                      height="420"
-                      opacity="0.65"
+                    <circle
+                      cx="10"
+                      cy="12"
+                      r="0.9"
+                      fill="rgba(72,46,18,0.16)"
+                    />
+                    <circle
+                      cx="42"
+                      cy="38"
+                      r="0.8"
+                      fill="rgba(72,46,18,0.14)"
+                    />
+                    <circle
+                      cx="84"
+                      cy="24"
+                      r="1.1"
+                      fill="rgba(72,46,18,0.12)"
+                    />
+                    <circle
+                      cx="24"
+                      cy="86"
+                      r="0.9"
+                      fill="rgba(72,46,18,0.13)"
+                    />
+                    <circle cx="96" cy="94" r="1" fill="rgba(72,46,18,0.15)" />
+                    <path
+                      d="M 0 60 C 20 56, 38 66, 60 60 C 82 54, 102 66, 120 60"
+                      stroke="rgba(75,48,20,0.08)"
+                      strokeWidth="1"
+                      fill="none"
                     />
                   </pattern>
                   <clipPath id="map-inner-clip">
                     <rect x="18" y="18" width="1164" height="524" rx="12" />
                   </clipPath>
-                  <pattern
-                    id="paper-grain"
-                    width="320"
-                    height="320"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <image
-                      href="https://www.transparenttextures.com/patterns/paper-fibers.png"
-                      x="0"
-                      y="0"
-                      width="320"
-                      height="320"
-                      opacity="0.3"
-                    />
-                  </pattern>
                   <filter
                     id="paper-edge"
                     x="-20%"
@@ -468,8 +416,8 @@ export function MapScreen({ state, onOpen }) {
                   width="1184"
                   height="544"
                   rx="18"
-                  fill="url(#paper-grain)"
-                  opacity="0.45"
+                  fill="url(#paper-speckle)"
+                  opacity="0.55"
                 />
                 <rect
                   x="14"
@@ -488,19 +436,32 @@ export function MapScreen({ state, onOpen }) {
                   y="18"
                   width="1164"
                   height="524"
-                  fill="url(#old-map-texture)"
-                  opacity="0.55"
+                  fill="url(#paper-speckle)"
+                  opacity="0.45"
                 />
 
                 <g clipPath="url(#map-inner-clip)">
-                  <image
-                    href="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Middle-earth_map_from_Tolkien%27s_The_Lord_of_the_Rings.svg/1920px-Middle-earth_map_from_Tolkien%27s_The_Lord_of_the_Rings.svg.png"
-                    x="20"
-                    y="20"
-                    width="1160"
-                    height="520"
-                    preserveAspectRatio="xMidYMid slice"
-                    opacity="0.16"
+                  <path
+                    d="M 38 108 C 184 74, 312 94, 468 130 C 612 166, 742 164, 912 124 C 1018 98, 1092 88, 1162 112 L 1162 202 C 1098 226, 1028 244, 916 262 C 772 286, 620 282, 456 248 C 316 218, 188 204, 38 224 Z"
+                    fill="rgba(120,88,48,0.09)"
+                  />
+                  <path
+                    d="M 36 314 C 194 278, 346 292, 514 330 C 670 366, 814 370, 986 334 C 1062 318, 1118 314, 1160 324 L 1160 426 C 1110 444, 1034 456, 938 468 C 804 486, 652 484, 486 448 C 334 416, 190 400, 36 420 Z"
+                    fill="rgba(120,88,48,0.08)"
+                  />
+                  <path
+                    d="M 78 64 C 198 120, 336 154, 514 176 C 708 198, 876 188, 1092 126"
+                    stroke="rgba(84,58,22,0.2)"
+                    strokeWidth="1.6"
+                    strokeDasharray="3,9"
+                    fill="none"
+                  />
+                  <path
+                    d="M 72 262 C 236 228, 396 234, 572 268 C 746 302, 900 306, 1096 252"
+                    stroke="rgba(84,58,22,0.18)"
+                    strokeWidth="1.4"
+                    strokeDasharray="2,8"
+                    fill="none"
                   />
                   <rect
                     x="18"
@@ -564,7 +525,7 @@ export function MapScreen({ state, onOpen }) {
                   const n1 = nodeMap.get(edge[0])
                   const n2 = nodeMap.get(edge[1])
                   if (!n1 || !n2) return null
-                  const path = edgePath(n1, n2, i)
+                  const path = createEdgePath(n1, n2, i)
                   return (
                     <g key={`line-${i}`}>
                       <path
@@ -667,7 +628,11 @@ export function MapScreen({ state, onOpen }) {
                           textShadow: '0 1px 0 rgba(0,0,0,0.35)',
                         }}
                       >
-                        {done ? 'V' : unlocked ? nodeIcon[n.id] || 'O' : 'L'}
+                        {done
+                          ? 'V'
+                          : unlocked
+                            ? MAP_NODE_ICON_BY_ID[n.id] || 'O'
+                            : 'L'}
                       </text>
 
                       {/* Nome do bioma */}
@@ -749,7 +714,7 @@ export function MapScreen({ state, onOpen }) {
                     </span>
                     <div className="hint-content">
                       <strong>{n.name}</strong>
-                      <small>{unlockHint(n.id)}</small>
+                      <small>{getUnlockHint(n.id, state.done, state.stars)}</small>
                     </div>
                   </div>
                 )
