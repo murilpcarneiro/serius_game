@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  AMBIENT_MUSIC_CONFIG,
-  MUSIC_SOURCE,
-  MUSIC_SETTINGS_KEY,
-} from '../constants/musicConstants'
+import { MUSIC_SOURCE, MUSIC_SETTINGS_KEY } from '../constants/musicConstants'
 
 const DEFAULT_SETTINGS = {
   enabled: false,
@@ -38,109 +34,8 @@ export function useAmbientMusic() {
   const [musicEnabled, setMusicEnabled] = useState(initial.enabled)
   const [musicVolume, setMusicVolumeState] = useState(initial.volume)
 
-  const ctxRef = useRef(null)
-  const masterGainRef = useRef(null)
-  const timerRef = useRef(null)
   const audioElRef = useRef(null)
   const warmedRef = useRef(false)
-
-  const ensureAudioChain = () => {
-    if (typeof window === 'undefined') return null
-
-    if (!ctxRef.current) {
-      const Ctx = window.AudioContext || window.webkitAudioContext
-      if (!Ctx) return null
-
-      const ctx = new Ctx()
-      const master = ctx.createGain()
-      master.gain.value = 0.0001
-      master.connect(ctx.destination)
-
-      ctxRef.current = ctx
-      masterGainRef.current = master
-    }
-
-    return { ctx: ctxRef.current, master: masterGainRef.current }
-  }
-
-  const playNote = (ctx, master, freq, when, duration, type, gain) => {
-    const osc = ctx.createOscillator()
-    const amp = ctx.createGain()
-
-    osc.type = type
-    osc.frequency.setValueAtTime(freq, when)
-
-    amp.gain.setValueAtTime(0.0001, when)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), when + 0.05)
-    amp.gain.exponentialRampToValueAtTime(0.0001, when + duration)
-
-    osc.connect(amp)
-    amp.connect(master)
-
-    osc.start(when)
-    osc.stop(when + duration + 0.04)
-  }
-
-  const scheduleCycle = () => {
-    const chain = ensureAudioChain()
-    if (!chain) return
-
-    const { ctx, master } = chain
-    const now = ctx.currentTime + 0.03
-    const config = AMBIENT_MUSIC_CONFIG
-
-    playNote(
-      ctx,
-      master,
-      config.drone.root,
-      now,
-      config.cycleSeconds,
-      config.drone.type,
-      config.drone.gain,
-    )
-
-    config.pulse.notes.forEach((freq, index) => {
-      const when = now + index * config.pulse.stepSeconds
-      playNote(
-        ctx,
-        master,
-        freq,
-        when,
-        config.pulse.noteDuration,
-        config.pulse.type,
-        config.pulse.gain,
-      )
-    })
-
-    config.lead.notes.forEach((freq, index) => {
-      const when = now + (config.lead.offsets[index] ?? 0)
-      playNote(
-        ctx,
-        master,
-        freq,
-        when,
-        config.lead.noteDuration,
-        config.lead.type,
-        config.lead.gain,
-      )
-    })
-  }
-
-  const stopCycle = () => {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-
-    const master = masterGainRef.current
-    const ctx = ctxRef.current
-    if (master && ctx) {
-      const now = ctx.currentTime
-      master.gain.cancelScheduledValues(now)
-      master.gain.setValueAtTime(master.gain.value || 0.0001, now)
-      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.28)
-    }
-  }
 
   const stopFileAudio = () => {
     const audio = audioElRef.current
@@ -209,33 +104,17 @@ export function useAmbientMusic() {
   useEffect(() => {
     if (!musicEnabled) {
       stopFileAudio()
-      stopCycle()
       return
     }
 
-    const startPreferred = async () => {
-      const wantsFileFirst = MUSIC_SOURCE?.mode === 'file-first'
-      const playedFile = wantsFileFirst ? await startFileAudio() : false
-      if (!playedFile && MUSIC_SOURCE?.fallbackToProcedural !== false) {
-        await startCycle()
-      }
-    }
-
-    startPreferred().catch(() => {
+    startFileAudio().catch(() => {
       // Navegador pode bloquear áudio sem gesto; rearmamos no primeiro clique.
     })
 
     const warmOnGesture = () => {
       if (warmedRef.current || !musicEnabled) return
       warmedRef.current = true
-      const wantsFileFirst = MUSIC_SOURCE?.mode === 'file-first'
-      const startPreferred = async () => {
-        const playedFile = wantsFileFirst ? await startFileAudio() : false
-        if (!playedFile && MUSIC_SOURCE?.fallbackToProcedural !== false) {
-          await startCycle()
-        }
-      }
-      startPreferred().catch(() => {})
+      startFileAudio().catch(() => {})
       window.removeEventListener('pointerdown', warmOnGesture)
       window.removeEventListener('keydown', warmOnGesture)
     }
@@ -247,7 +126,6 @@ export function useAmbientMusic() {
       window.removeEventListener('pointerdown', warmOnGesture)
       window.removeEventListener('keydown', warmOnGesture)
       stopFileAudio()
-      stopCycle()
     }
   }, [musicEnabled])
 
@@ -255,30 +133,14 @@ export function useAmbientMusic() {
     if (audioElRef.current) {
       audioElRef.current.volume = clampVolume(musicVolume)
     }
-
-    const master = masterGainRef.current
-    const ctx = ctxRef.current
-    if (!master || !ctx || !musicEnabled) return
-
-    const now = ctx.currentTime
-    const target = Math.max(0.0001, musicVolume * 0.16)
-    master.gain.cancelScheduledValues(now)
-    master.gain.setValueAtTime(Math.max(master.gain.value || 0.0001, 0.0001), now)
-    master.gain.linearRampToValueAtTime(target, now + 0.18)
-  }, [musicVolume, musicEnabled])
+  }, [musicVolume])
 
   useEffect(
     () => () => {
       stopFileAudio()
-      stopCycle()
-      if (ctxRef.current) {
-        ctxRef.current.close().catch(() => {})
-      }
       if (audioElRef.current) {
         audioElRef.current.src = ''
       }
-      ctxRef.current = null
-      masterGainRef.current = null
       audioElRef.current = null
     },
     [],
