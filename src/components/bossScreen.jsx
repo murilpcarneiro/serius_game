@@ -160,6 +160,7 @@ export function BossScreen({
     setWizStep(0)
     setWizElim(null)
     setWizReveal(false)
+    setWizOrder([])
     setConnStage(0)
     setConnElim(null)
     setConnInput('')
@@ -170,9 +171,9 @@ export function BossScreen({
   useEffect(() => {
     if (!q) return
     if (q.kind === 'forge') setForgeOrder(shuffleItems(q.pieces))
-    if (q.kind === 'wizard') setWizOrder(shuffleItems(q.steps[0].options))
+    if (q.kind === 'wizard') setWizOrder(shuffleItems(q.steps[wizStep].options))
     if (q.kind === 'connect') setConnOrder(shuffleItems(q.options))
-  }, [qIndex])
+  }, [qIndex, wizStep])
 
   const effectiveBossLock =
     boss.blockedItems.includes('ALL') && !supremeOverride ? 'ALL' : boss.id

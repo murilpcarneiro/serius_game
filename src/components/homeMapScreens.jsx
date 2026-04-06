@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   G,
   MAP_EDGES,
@@ -150,6 +150,7 @@ export function HomeScreen({
 }
 
 export function MapScreen({ state, onOpen }) {
+  const [showCelebration, setShowCelebration] = useState(false)
   const unlockedNodes = MAP_NODES.filter((n) =>
     isUnlocked(n.id, state.done, state.stars),
   )
@@ -166,6 +167,16 @@ export function MapScreen({ state, onOpen }) {
     MAP_NODES.forEach((node) => map.set(node.id, node))
     return map
   }, [])
+
+  useEffect(() => {
+    if (nextObjective) {
+      setShowCelebration(false)
+      return undefined
+    }
+
+    const timer = setTimeout(() => setShowCelebration(true), 220)
+    return () => clearTimeout(timer)
+  }, [nextObjective])
 
   return (
     <section className="screen map-screen rpg-layout">
@@ -723,6 +734,45 @@ export function MapScreen({ state, onOpen }) {
           </div>
         </div>
       </div>
+
+      {showCelebration && !nextObjective && (
+        <div className="overlay final-celebration-overlay">
+          <div className="final-celebration-card">
+            <div className="crown-orbit" aria-hidden="true">
+              <span>✦</span>
+              <span>✧</span>
+              <span>✦</span>
+              <span>✧</span>
+              <span>✦</span>
+              <span>✧</span>
+            </div>
+            <div className="final-celebration-badge">CAMPANHA CONCLUÍDA</div>
+            <h2>A Coroa Arcana foi restaurada</h2>
+            <p>
+              Todas as fases foram vencidas. O conhecimento foi selado, o
+              Arquimago caiu e o caminho do Integral Supremo ficou para trás.
+            </p>
+            <div className="final-celebration-stats">
+              <span>{state.done.length}/{MAP_NODES.length} fases</span>
+              <span>{Object.values(state.stars).reduce((sum, value) => sum + value, 0)} estrelas</span>
+            </div>
+            <div className="stars-row final-stars-row" aria-hidden="true">
+              {[1, 2, 3, 4, 5].map((value, index) => (
+                <span
+                  key={value}
+                  className="star on final-star"
+                  style={{ animationDelay: `${index * 0.14}s` }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <button className="btn primary glow-btn" onClick={() => onOpen('home')}>
+              VOLTAR AO INÍCIO
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
