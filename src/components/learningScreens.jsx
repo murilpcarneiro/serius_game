@@ -10,6 +10,26 @@ import {
 import { CrystalModal, Feedback, HP, ItemBar, LoreCard, Tag } from './ui'
 import { usePhaseLife } from './usePhaseLife'
 
+const RESULT_TOLERANCE = 0.02
+
+function parseMathNumberInput(raw) {
+  const normalized = raw.trim().replace(/\s+/g, '').replace(',', '.')
+  if (!normalized) return Number.NaN
+
+  if (/^[+-]?\d*\.?\d+$/.test(normalized)) {
+    return Number(normalized)
+  }
+
+  if (/^[+-]?\d*\.?\d+\/[+-]?\d*\.?\d+$/.test(normalized)) {
+    const [numStr, denStr] = normalized.split('/')
+    const denominator = Number(denStr)
+    if (denominator === 0) return Number.NaN
+    return Number(numStr) / denominator
+  }
+
+  return Number.NaN
+}
+
 function PhaseDefeatScreen({ onBackMap }) {
   return (
     <section className="screen boss-end lose">
@@ -671,8 +691,16 @@ export function MeasureScreen({
   }
 
   const verify = () => {
-    const val = Number(input.replace(',', '.'))
-    const ok = Math.abs(val - q.real) <= 0.6
+    const val = parseMathNumberInput(input)
+    if (Number.isNaN(val)) {
+      setFeedback({
+        msg: 'Digite um valor numerico valido (decimal ou fracao).',
+        type: 'err',
+      })
+      return
+    }
+
+    const ok = Math.abs(val - q.real) <= RESULT_TOLERANCE
     if (ok) {
       setFeedback({ msg: `✓ ${q.ok} · +${q.xp} XP`, type: 'ok' })
       setState((s) => ({ ...s, xp: s.xp + q.xp }))
@@ -744,16 +772,20 @@ export function MeasureScreen({
         )}
       </div>
       <p className="phase-subtitle">
-        Calcule a area entre as curvas usando: A = ∫[f_cima(x) - f_baixo(x)]dx
+        Calcule a area entre as curvas usando a diferenca entre curva superior e inferior.
       </p>
       <p className="phase-subtitle">
         No intervalo [{q.a}, {q.b}]: {q.topLabel} e {q.bottomLabel}
       </p>
       <LoreCard text={q.story} />
 
-      <div className="integral-display">
-        A = ∫{q.a}^{q.b} ({q.topLabel.replace('f_cima(x) = ', '')}) dx − ∫{q.a}^
-        {q.b} ({q.bottomLabel.replace('f_baixo(x) = ', '')}) dx
+      <div className="integral-display integral-math">
+        A = ∫<sub>{q.a}</sub>
+        <sup>{q.b}</sup> [(
+        {q.topLabel.replace('f_cima(x) = ', '')}
+        ) - (
+        {q.bottomLabel.replace('f_baixo(x) = ', '')}
+        )] dx
       </div>
 
       <svg viewBox="0 0 360 220" className="graph">
@@ -763,12 +795,20 @@ export function MeasureScreen({
       </svg>
 
       <div className="measure-stage">
+        <p>
+          Aplicacao do TFC: A = [F_cima({q.b}) - F_cima({q.a})] -
+          {' '}
+          [F_baixo({q.b}) - F_baixo({q.a})]
+        </p>
+        <p>Primitivas de apoio nesta fase:</p>
         <p>{q.topAntideriv}</p>
         <p>{q.bottomAntideriv}</p>
+        <p>Resposta: informe apenas o valor numerico final da area.</p>
         <input
           className="num-input"
-          type="number"
-          placeholder="Digite a área final"
+          type="text"
+          inputMode="decimal"
+          placeholder="Digite a área final (ex.: decimal ou fração)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
@@ -890,8 +930,17 @@ export function ConnectScreen({
     if (isResolving) return
     setIsResolving(true)
 
-    const v = Number(input.replace(',', '.'))
-    const ok = Math.abs(v - q.realNum) <= 0.6
+    const v = parseMathNumberInput(input)
+    if (Number.isNaN(v)) {
+      setFeedback({
+        msg: 'Digite um valor numerico valido (decimal ou fracao).',
+        type: 'err',
+      })
+      setIsResolving(false)
+      return
+    }
+
+    const ok = Math.abs(v - q.realNum) <= RESULT_TOLERANCE
     if (ok) {
       setFeedback({ msg: `✓ ${q.ok} · +${q.xp} XP`, type: 'ok' })
       setState((s) => ({ ...s, xp: s.xp + q.xp }))
@@ -1008,8 +1057,9 @@ export function ConnectScreen({
           </p>
           <input
             className="num-input"
-            type="number"
-            placeholder="Digite F(b)-F(a)"
+            type="text"
+            inputMode="decimal"
+            placeholder="Digite F(b)-F(a) (ex.: 8 ou 64/3)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />

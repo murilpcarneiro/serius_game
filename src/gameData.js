@@ -651,7 +651,7 @@ export const MEASURE_Q = [
   {
     biome: 'Planicie da Area',
     story:
-      'Uma muralha curva foi erguida no caminho sul. Calcule a area entre f_cima(x)=2x+3 e f_baixo(x)=x no intervalo [1,4] para abrir passagem.',
+      'Duas muralhas inclinadas foram erguidas no caminho sul. Calcule a area entre f_cima(x)=2x+3 e f_baixo(x)=x no intervalo [1,4] para abrir passagem.',
     topFn: (x) => 2 * x + 3,
     bottomFn: (x) => x,
     topLabel: 'f_cima(x) = 2x + 3',
