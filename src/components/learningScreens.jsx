@@ -625,6 +625,7 @@ export function MeasureScreen({
   const [reviewEntry, setReviewEntry] = useState(null)
   const [defeated, setDefeated] = useState(false)
   const [freeHintUsed, setFreeHintUsed] = useState(false)
+  const [isResolving, setIsResolving] = useState(false)
 
   const q = phaseQuestions[idx]
 
@@ -677,6 +678,7 @@ export function MeasureScreen({
     if (!q) return
     setInput('')
     setFreeHintUsed(false)
+    setIsResolving(false)
   }, [idx])
 
   if (defeated) {
@@ -691,12 +693,16 @@ export function MeasureScreen({
   }
 
   const verify = () => {
+    if (isResolving) return
+    setIsResolving(true)
+
     const val = parseMathNumberInput(input)
     if (Number.isNaN(val)) {
       setFeedback({
         msg: 'Digite um valor numerico valido (decimal ou fracao).',
         type: 'err',
       })
+      setIsResolving(false)
       return
     }
 
@@ -715,6 +721,7 @@ export function MeasureScreen({
           setInput('')
           setFeedback(null)
         }
+        setIsResolving(false)
       }, 1300)
     } else {
       const category = categoryLabel('MEASURE')
@@ -729,6 +736,7 @@ export function MeasureScreen({
       }
       setFeedback({ msg: `✗ Incorreto. [${category}] ${q.hint}`, type: 'err' })
       setInput('')
+      setIsResolving(false)
     }
   }
 
@@ -811,8 +819,9 @@ export function MeasureScreen({
           placeholder="Digite a área final (ex.: decimal ou fração)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={isResolving}
         />
-        <button className="btn primary" onClick={verify}>
+        <button className="btn primary" onClick={verify} disabled={isResolving}>
           VERIFICAR
         </button>
       </div>
